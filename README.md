@@ -43,7 +43,7 @@
 ## 快速开始
 
 ```
-git clone https://github.com/yclkoko-afk/RuruOS.git
+git clone https://github.com/Rurutia-Artemis/RuruOS.git
 ```
 
 1. 用 [Obsidian](https://obsidian.md) 打开这个文件夹，选「信任并启用社区插件」
