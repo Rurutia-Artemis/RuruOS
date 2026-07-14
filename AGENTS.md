@@ -1,5 +1,7 @@
 # RuruOS Agent 写入规范
 
+> 用户刚拿到这个库、还没搭建好？先按根目录《AI搭建指南.md》把系统搭起来，再回来遵守本规范。
+
 本 vault 是 Lulu 的个人知识系统中枢。所有 Agent（Codex、Claude Code、Mia/Hermes）向本 vault 写入内容时，**必须**遵守本文件。不确定放哪时，写入 `20-Reading/Queue/` 并在 frontmatter 标 `needs_review: true`，禁止自创文件夹。
 
 ## 目录职责（唯一权威）

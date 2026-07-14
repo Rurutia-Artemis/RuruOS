@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/hero.svg" alt="RuruOS：软糖手账个人知识系统" width="100%">
+  <img src="https://raw.githubusercontent.com/Rurutia-Artemis/RuruOS/main/docs/assets/hero.svg" alt="RuruOS：软糖手账个人知识系统" width="100%">
 </p>
 
 # RuruOS
@@ -7,7 +7,7 @@
 一套长在 Obsidian 上的个人知识系统。数据层是朴素的 markdown + frontmatter，界面层是一枚自研插件画出来的糖果色手账中枢——文章、追剧、待办、日程、账本，全在一屏。AI 是可选件：接上 Claude Code 它帮你整理入库，不接一样能用。
 
 <p align="center">
-  <img src="docs/assets/home.png" alt="RuruOS 中枢主屏：糖果色顶栏、待办卡、日历卡、账目卡与追剧墙" width="100%">
+  <img src="https://raw.githubusercontent.com/Rurutia-Artemis/RuruOS/main/docs/assets/home.png" alt="RuruOS 中枢主屏：糖果色顶栏、待办卡、日历卡、账目卡与追剧墙" width="100%">
 </p>
 
 ## 它是什么
@@ -32,15 +32,25 @@
 
 | | |
 |---|---|
-| ![阅读器](docs/assets/reader.png) | ![剧集详情](docs/assets/drama.png) |
+| ![阅读器](https://raw.githubusercontent.com/Rurutia-Artemis/RuruOS/main/docs/assets/reader.png) | ![剧集详情](https://raw.githubusercontent.com/Rurutia-Artemis/RuruOS/main/docs/assets/drama.png) |
 | 杂志排版阅读器，奶油黄荧光笔 | 剧集详情页，评分徽章与分季档案 |
 
 <p align="center">
-  <img src="docs/assets/ledger.png" alt="账本详情页：对账单式明细表与占比条（演示图已遮蔽金额）" width="92%">
+  <img src="https://raw.githubusercontent.com/Rurutia-Artemis/RuruOS/main/docs/assets/ledger.png" alt="账本详情页：对账单式明细表与占比条（演示图已遮蔽金额）" width="92%">
 </p>
 <p align="center"><sub>账本详情页。演示图对金额做了遮蔽，库里附带的是虚构示例账本。</sub></p>
 
 ## 快速开始
+
+**推荐姿势：让你的 AI 替你装。** 把下面这句话原样复制给任何能执行命令的 AI（Claude Code、Codex、Cursor……）：
+
+```text
+请克隆 https://github.com/Rurutia-Artemis/RuruOS ，然后按仓库根目录《AI搭建指南.md》一步步把 RuruOS 给我搭好。
+```
+
+它会自己克隆、配好天气和名牌、按你的意愿处理示例数据，只在必须点 Obsidian 界面的两步喊你动手。装完以后，再把 [`给智能体的说明书.md`](给智能体的说明书.md) 喂给你的日常 AI，它就能持续帮你把文章、剧集、账目整理入库——从装机到日用，全程只有 AI 这一个接口。
+
+**不用 AI 也能手动装，三步**：
 
 ```
 git clone https://github.com/Rurutia-Artemis/RuruOS.git
@@ -64,7 +74,8 @@ git clone https://github.com/Rurutia-Artemis/RuruOS.git
 
 | 文档 | 干什么用 |
 |---|---|
-| [`docs/安装指南.md`](docs/安装指南.md) | 从零装到能用，三档路线，常见问题 |
+| [`AI搭建指南.md`](AI搭建指南.md) | 写给 AI 执行的装机手册——把仓库丢给你的 AI，它照这个搭 |
+| [`docs/安装指南.md`](docs/安装指南.md) | 人类手动安装路线，常见问题 |
 | [`docs/接入AI指南.md`](docs/接入AI指南.md) | 哪些功能免费、哪些烧 AI 额度；四种智能体的接法 |
 | [`docs/自定义指南.md`](docs/自定义指南.md) | 改天气城市、换句库、换徽记、开项目卡 |
 | [`给智能体的说明书.md`](给智能体的说明书.md) | 复制给任何聊天机器人，它就懂怎么往库里写东西 |
