@@ -1,0 +1,26 @@
+<svg viewBox="0 0 1200 108" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="文档">
+  <defs>
+    <linearGradient id="bg-sec-docs" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff7ee"/><stop offset="1" stop-color="#fdeee1"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="10" width="1192" height="88" rx="24" fill="url(#bg-sec-docs)" stroke="#f3d9c3" stroke-width="2"/>
+  <circle cx="1060" cy="30" r="42" fill="#ffd66b" opacity="0.10"/>
+  <!-- 贴纸 -->
+  <g transform="translate(30 22) rotate(-1.4)">
+    <rect width="150" height="64" rx="16" fill="#ffd66b" opacity="0.30"/>
+    <rect width="150" height="64" rx="16" fill="none" stroke="#ffd66b" stroke-opacity="0.75" stroke-width="2"/>
+    <rect x="46" y="-9" width="58" height="17" rx="3.5" fill="#ffd66b" opacity="0.45" transform="rotate(-5 75 -1)"/>
+    <g transform="translate(16 10) scale(1.85)"><path d="M12 5.6 C10 4 6.6 3.8 4.4 4.6 L4.4 18 C6.6 17.2 10 17.4 12 19 C14 17.4 17.4 17.2 19.6 18 L19.6 4.6 C17.4 3.8 14 4 12 5.6 Z" fill="#ffd66b" opacity="0.5" stroke="#7a5a44" stroke-width="1.7" stroke-linejoin="round"/>
+<line x1="12" y1="5.8" x2="12" y2="18.6" stroke="#7a5a44" stroke-width="1.5"/>
+<line x1="6.6" y1="8.4" x2="9.8" y2="8.8" stroke="#7a5a44" stroke-width="1.3" stroke-linecap="round"/>
+<line x1="14.2" y1="8.8" x2="17.4" y2="8.4" stroke="#7a5a44" stroke-width="1.3" stroke-linecap="round"/></g>
+    <text x="66" y="43" font-family="ui-rounded, 'Hiragino Maru Gothic ProN', 'Yuanti SC', -apple-system, 'Segoe UI', sans-serif" font-weight="800" font-size="31" fill="#6b4b38">文档</text>
+  </g>
+  <!-- 虚线延伸 -->
+  <line x1="206" y1="54" x2="1130" y2="54" stroke="#e6c9ae" stroke-width="2.4" stroke-dasharray="7 8" stroke-linecap="round"/>
+  <!-- 右端糖果点 -->
+  <circle cx="1148" cy="54" r="7" fill="#ffd66b" opacity="0.9"/>
+  <circle cx="1166" cy="47" r="4.5" fill="#ffd66b" opacity="0.45"/>
+  <ellipse cx="1160" cy="63" rx="5.5" ry="3.6" fill="#ffb3c6" opacity="0.7" transform="rotate(-24 1160 63)"/>
+</svg>

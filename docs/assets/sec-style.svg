@@ -1,0 +1,24 @@
+<svg viewBox="0 0 1200 108" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="关于风格">
+  <defs>
+    <linearGradient id="bg-sec-style" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff7ee"/><stop offset="1" stop-color="#fdeee1"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="10" width="1192" height="88" rx="24" fill="url(#bg-sec-style)" stroke="#f3d9c3" stroke-width="2"/>
+  <circle cx="1060" cy="30" r="42" fill="#b9a5f5" opacity="0.10"/>
+  <!-- 贴纸 -->
+  <g transform="translate(30 22) rotate(-1.4)">
+    <rect width="212" height="64" rx="16" fill="#b9a5f5" opacity="0.30"/>
+    <rect width="212" height="64" rx="16" fill="none" stroke="#b9a5f5" stroke-opacity="0.75" stroke-width="2"/>
+    <rect x="77" y="-9" width="58" height="17" rx="3.5" fill="#b9a5f5" opacity="0.45" transform="rotate(-5 106 -1)"/>
+    <g transform="translate(16 10) scale(1.85)"><path d="M12 3.6 C7 3.6 3.4 7.2 3.4 11.8 C3.4 16.4 7 19.8 11.4 19.8 C13 19.8 13.6 18.9 13.6 17.9 C13.6 16.5 12.6 16.2 12.6 15.1 C12.6 14 13.6 13.4 15.2 13.4 L17 13.4 C19.2 13.4 20.6 11.9 20.6 10 C20.6 6.2 16.8 3.6 12 3.6 Z" fill="#b9a5f5" opacity="0.55" stroke="#7a5a44" stroke-width="1.7"/>
+<circle cx="8.2" cy="8.4" r="1.5" fill="#ff8fab"/><circle cx="12.6" cy="6.8" r="1.5" fill="#ffd66b"/><circle cx="16.6" cy="9" r="1.5" fill="#6fd8b4"/><circle cx="7.6" cy="13" r="1.5" fill="#7db8f7"/></g>
+    <text x="66" y="43" font-family="ui-rounded, 'Hiragino Maru Gothic ProN', 'Yuanti SC', -apple-system, 'Segoe UI', sans-serif" font-weight="800" font-size="31" fill="#6b4b38">关于风格</text>
+  </g>
+  <!-- 虚线延伸 -->
+  <line x1="268" y1="54" x2="1130" y2="54" stroke="#e6c9ae" stroke-width="2.4" stroke-dasharray="7 8" stroke-linecap="round"/>
+  <!-- 右端糖果点 -->
+  <circle cx="1148" cy="54" r="7" fill="#b9a5f5" opacity="0.9"/>
+  <circle cx="1166" cy="47" r="4.5" fill="#b9a5f5" opacity="0.45"/>
+  <ellipse cx="1160" cy="63" rx="5.5" ry="3.6" fill="#ffb3c6" opacity="0.7" transform="rotate(-24 1160 63)"/>
+</svg>

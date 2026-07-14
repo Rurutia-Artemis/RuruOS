@@ -1,0 +1,26 @@
+<svg viewBox="0 0 1200 108" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="它是什么">
+  <defs>
+    <linearGradient id="bg-sec-what" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff7ee"/><stop offset="1" stop-color="#fdeee1"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="10" width="1192" height="88" rx="24" fill="url(#bg-sec-what)" stroke="#f3d9c3" stroke-width="2"/>
+  <circle cx="1060" cy="30" r="42" fill="#7db8f7" opacity="0.10"/>
+  <!-- 贴纸 -->
+  <g transform="translate(30 22) rotate(-1.4)">
+    <rect width="212" height="64" rx="16" fill="#7db8f7" opacity="0.30"/>
+    <rect width="212" height="64" rx="16" fill="none" stroke="#7db8f7" stroke-opacity="0.75" stroke-width="2"/>
+    <rect x="77" y="-9" width="58" height="17" rx="3.5" fill="#7db8f7" opacity="0.45" transform="rotate(-5 106 -1)"/>
+    <g transform="translate(16 10) scale(1.85)"><rect x="7" y="4" width="13" height="9" rx="2.4" fill="#ffffff" opacity="0.7" stroke="#7a5a44" stroke-width="1.7" transform="rotate(4 13.5 8.5)"/>
+<rect x="4" y="9" width="13" height="9" rx="2.4" fill="#7db8f7" opacity="0.55" stroke="#7a5a44" stroke-width="1.7" transform="rotate(-3 10.5 13.5)"/>
+<line x1="7" y1="13" x2="13" y2="13" stroke="#7a5a44" stroke-width="1.5" stroke-linecap="round" transform="rotate(-3 10.5 13.5)"/>
+<line x1="7" y1="15.6" x2="11" y2="15.6" stroke="#7a5a44" stroke-width="1.5" stroke-linecap="round" transform="rotate(-3 10.5 13.5)"/></g>
+    <text x="66" y="43" font-family="ui-rounded, 'Hiragino Maru Gothic ProN', 'Yuanti SC', -apple-system, 'Segoe UI', sans-serif" font-weight="800" font-size="31" fill="#6b4b38">它是什么</text>
+  </g>
+  <!-- 虚线延伸 -->
+  <line x1="268" y1="54" x2="1130" y2="54" stroke="#e6c9ae" stroke-width="2.4" stroke-dasharray="7 8" stroke-linecap="round"/>
+  <!-- 右端糖果点 -->
+  <circle cx="1148" cy="54" r="7" fill="#7db8f7" opacity="0.9"/>
+  <circle cx="1166" cy="47" r="4.5" fill="#7db8f7" opacity="0.45"/>
+  <ellipse cx="1160" cy="63" rx="5.5" ry="3.6" fill="#ffb3c6" opacity="0.7" transform="rotate(-24 1160 63)"/>
+</svg>

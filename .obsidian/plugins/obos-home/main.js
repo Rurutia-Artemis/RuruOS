@@ -31,23 +31,51 @@ const FOLDERS = {
    默认留空 = 项目卡显示提示；想启用就填你的代码目录绝对路径，如 '/Users/you/Code' */
 const PROJECTS_DIR = '';
 
-/* AI 功能（浓缩/清杂/补剧集资料/搜评分/中文剧名转译）依赖本机 claude CLI（Claude Code）。
-   按下面顺序自动探测；装在别处就把路径加进数组开头。
-   没装 claude 的用户：AI 按钮会弹提示并跳过，其余全部功能不受影响。 */
-function resolveClaudeBin() {
+/* AI 引擎：插件的 AI 功能（浓缩/清杂/补剧集资料/搜评分/中文剧名转译）可由本机任意一款
+   agent CLI 驱动。按下表顺序自动探测，第一个找到的就是引擎；想强制指定就把名字填进 AI_ENGINE_FORCE。
+   每个引擎三套参数：edit=改库内文件的后台任务；editWeb=还需要联网查证的任务；ask=快问快答（只要一行答案）。
+   你的工具不在列表里？照格式加一项即可，要求只有两条：支持非交互执行一句 prompt、能在 cwd 里改文件。
+   没装任何 AI 的用户：AI 按钮会弹提示并跳过，其余全部功能不受影响。 */
+const AI_ENGINE_FORCE = '';   /* 例如 'codex'；留空 = 自动探测 */
+const AI_HOME = require('os').homedir();
+const aiCand = name => [
+  `${AI_HOME}/.local/bin/${name}`,
+  '/opt/homebrew/bin/' + name,
+  '/usr/local/bin/' + name,
+  `${AI_HOME}/bin/${name}`,
+  '/usr/bin/' + name,
+];
+const AI_ENGINES = [
+  { name: 'claude',   bins: [...aiCand('claude'), `${AI_HOME}/.claude/local/claude`],
+    edit:    p => ['-p', p, '--permission-mode', 'acceptEdits'],
+    editWeb: p => ['-p', p, '--permission-mode', 'acceptEdits', '--allowedTools', 'WebSearch', 'WebFetch'],
+    ask:     p => ['-p', p, '--model', 'haiku'] },
+  { name: 'codex',    bins: aiCand('codex'),
+    edit:    p => ['exec', '--full-auto', p],
+    editWeb: p => ['exec', '--full-auto', '-c', 'sandbox_workspace_write.network_access=true', p],
+    ask:     p => ['exec', '--full-auto', p] },
+  { name: 'gemini',   bins: aiCand('gemini'),
+    edit: p => ['--yolo', '-p', p], editWeb: p => ['--yolo', '-p', p], ask: p => ['-p', p] },
+  { name: 'qwen',     bins: aiCand('qwen'),
+    edit: p => ['--yolo', '-p', p], editWeb: p => ['--yolo', '-p', p], ask: p => ['-p', p] },
+  { name: 'iflow',    bins: aiCand('iflow'),
+    edit: p => ['--yolo', '-p', p], editWeb: p => ['--yolo', '-p', p], ask: p => ['-p', p] },
+  { name: 'opencode', bins: aiCand('opencode'),
+    edit: p => ['run', p], editWeb: p => ['run', p], ask: p => ['run', p] },
+];
+function resolveAiEngine() {
   try {
     const fs = require('fs');
-    const home = require('os').homedir();
-    return [
-      `${home}/.local/bin/claude`,
-      `${home}/.claude/local/claude`,
-      '/opt/homebrew/bin/claude',
-      '/usr/local/bin/claude',
-    ].find(p => fs.existsSync(p)) || null;
-  } catch (e) { return null; }
+    const pool = AI_ENGINE_FORCE ? AI_ENGINES.filter(e => e.name === AI_ENGINE_FORCE) : AI_ENGINES;
+    for (const e of pool) {
+      const bin = e.bins.find(b => fs.existsSync(b));
+      if (bin) return Object.assign({ bin }, e);
+    }
+  } catch (err) { /* 探测失败按未安装处理 */ }
+  return null;
 }
-const CLAUDE_BIN = resolveClaudeBin();
-const NO_CLAUDE_MSG = '未检测到 claude CLI：此按钮需要安装 Claude Code（其余功能不受影响），见 docs/接入AI指南.md';
+const AI = resolveAiEngine();
+const NO_AI_MSG = '未检测到本机 AI 命令行工具（支持 claude / codex / gemini / qwen / iflow / opencode，见 docs/接入AI指南.md）。其余功能不受影响。';
 
 /* ═══════════ 公开版配置区结束 ═══════════ */
 
@@ -2358,11 +2386,11 @@ class ObosHomeView extends ItemView {
   }
 
   async runClaudeTask(key, label, prompt) {
-    if (!CLAUDE_BIN) { new Notice(NO_CLAUDE_MSG, 9000); return; }
+    if (!AI) { new Notice(NO_AI_MSG, 9000); return; }
     if (this.aiBusy[key]) return;
     this.aiBusy[key] = true;
     this.render();
-    new Notice('已启动 Claude 后台任务（通常 1-3 分钟），完成会弹提示', 8000);
+    new Notice(`已启动 AI 后台任务（引擎 ${AI.name}，通常 1-3 分钟），完成会弹提示`, 8000);
 
     const basePath = this.app.vault.adapter.basePath;
     const env = Object.assign({}, process.env, {
@@ -2373,7 +2401,7 @@ class ObosHomeView extends ItemView {
 
     let child;
     try {
-      child = spawn(CLAUDE_BIN, ['-p', prompt, '--permission-mode', 'acceptEdits'], {
+      child = spawn(AI.bin, AI.edit(prompt), {
         cwd: basePath,
         env,
       });
@@ -3058,12 +3086,12 @@ module.exports = class ObosHomePlugin extends Plugin {
   /* 快问快答：等 claude 一句话答案（中文剧名→英文名等），haiku 模型秒回，不动文件 */
   askClaude(prompt) {
     return new Promise((resolve, reject) => {
-      if (!CLAUDE_BIN) { reject(new Error('未检测到 claude CLI（AI 转译不可用）')); return; }
+      if (!AI) { reject(new Error('未检测到本机 AI CLI（转译不可用）')); return; }
       const { spawn } = require('child_process');
       const env = Object.assign({}, process.env, {
         PATH: `${process.env.PATH || ''}:${require('os').homedir()}/.local/bin:/opt/homebrew/bin:/usr/local/bin`,
       });
-      const child = spawn(CLAUDE_BIN, ['-p', prompt, '--model', 'haiku'], {
+      const child = spawn(AI.bin, AI.ask(prompt), {
         cwd: this.app.vault.adapter.basePath, env,
         stdio: ['ignore', 'pipe', 'pipe'], /* stdin 必须关死：CLI 见到打开的管道会等输入直到 EOF，整个搜索就挂住 */
       });
@@ -3074,30 +3102,32 @@ module.exports = class ObosHomePlugin extends Plugin {
       child.on('error', e => { window.clearTimeout(timer); reject(e); });
       child.on('close', code => {
         window.clearTimeout(timer);
-        if (code === 0) resolve(out.trim());
-        else reject(new Error(err.slice(0, 200) || `退出码 ${code}`));
+        if (code === 0) {
+          /* 各家 CLI stdout 噪音不同（日志/流式输出），一律取最后一行非空文本当答案 */
+          const ls = out.trim().split('\n').filter(l => l.trim());
+          resolve(ls.length ? ls[ls.length - 1].trim() : '');
+        } else reject(new Error(err.slice(0, 200) || `退出码 ${code}`));
       });
     });
   }
 
   /* 通用后台 Claude 任务（搜评分等）；busy 时排队，跑完自动接续 */
   runClaude(label, prompt) {
-    if (!CLAUDE_BIN) { new Notice(NO_CLAUDE_MSG, 9000); return; }
+    if (!AI) { new Notice(NO_AI_MSG, 9000); return; }
     if (this._claudeBusy) {
       (this._claudeQueue = this._claudeQueue || []).push([label, prompt]);
       new Notice(`已有 Claude 任务在跑，「${label}」已排队（第 ${this._claudeQueue.length} 位）`);
       return;
     }
     this._claudeBusy = true;
-    new Notice(`已启动「${label}」后台任务（约 1-2 分钟）`, 6000);
+    new Notice(`已启动「${label}」后台任务（引擎 ${AI.name}，约 1-2 分钟）`, 6000);
     const { spawn } = require('child_process');
     const env = Object.assign({}, process.env, {
       PATH: `${process.env.PATH || ''}:${require('os').homedir()}/.local/bin:/opt/homebrew/bin:/usr/local/bin`,
     });
-    /* --allowedTools 放行联网搜索：acceptEdits 只自动接受文件编辑，
-       不加这个后台任务查不了豆瓣/IMDb（v7.2 实锤：非交互会话里 WebSearch/WebFetch 全被拒） */
-    const child = spawn(CLAUDE_BIN,
-      ['-p', prompt, '--permission-mode', 'acceptEdits', '--allowedTools', 'WebSearch', 'WebFetch'], {
+    /* editWeb 参数放行联网：claude 是 --allowedTools WebSearch/WebFetch（acceptEdits 只自动接受文件编辑，
+       不加这个后台任务查不了豆瓣/IMDb，v7.2 实锤），其他引擎见 AI_ENGINES 各家定义 */
+    const child = spawn(AI.bin, AI.editWeb(prompt), {
         cwd: this.app.vault.adapter.basePath, env,
         stdio: ['ignore', 'pipe', 'pipe'], /* stdin 关死防 CLI 等输入挂住 */
       });
