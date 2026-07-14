@@ -1,0 +1,56 @@
+filters:
+  and:
+    - file.inFolder("20-Reading/Articles")
+properties:
+  file.name:
+    displayName: 文章
+  note.category:
+    displayName: 分类
+  note.status:
+    displayName: 状态
+  note.author:
+    displayName: 作者
+  note.added:
+    displayName: 收录日期
+  note.rating:
+    displayName: 评分
+views:
+  - type: table
+    name: 待读
+    filters:
+      and:
+        - status != "read"
+    order:
+      - file.name
+      - note.category
+      - note.status
+      - note.author
+      - note.added
+    sort:
+      - property: note.category
+        direction: ASC
+      - property: note.added
+        direction: DESC
+  - type: table
+    name: 已读
+    filters:
+      and:
+        - status == "read"
+    order:
+      - file.name
+      - note.category
+      - note.rating
+      - note.read_at
+    sort:
+      - property: note.read_at
+        direction: DESC
+  - type: cards
+    name: 分类浏览
+    order:
+      - note.category
+      - note.status
+      - note.author
+    sort:
+      - property: note.category
+        direction: ASC
+    cardSize: 240

@@ -1,0 +1,34 @@
+filters:
+  and:
+    - file.inFolder("10-Projects")
+    - type == "project"
+properties:
+  note.title:
+    displayName: 项目
+  note.status:
+    displayName: 状态
+  note.priority:
+    displayName: 优先级
+  note.updated:
+    displayName: 更新
+views:
+  - type: cards
+    name: 项目墙
+    order:
+      - note.status
+      - note.priority
+      - note.updated
+    sort:
+      - property: note.updated
+        direction: DESC
+    cardSize: 220
+  - type: table
+    name: 列表
+    order:
+      - note.title
+      - note.status
+      - note.priority
+      - note.updated
+    sort:
+      - property: note.status
+        direction: ASC

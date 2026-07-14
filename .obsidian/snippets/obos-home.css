@@ -1,0 +1,53 @@
+/* ===== OBOS 主屏样式 · 自适应 MacBook (16:10) 到 21:9 带鱼屏 ===== */
+
+/* 主屏页面加宽：小屏留边距，大屏最多吃到 1680px，21:9 不会拉成一行长面条 */
+.obos-home.markdown-preview-view,
+.obos-home .markdown-preview-sizer,
+.obos-home.markdown-source-view .cm-sizer {
+  max-width: min(94%, 1680px) !important;
+  margin-inline: auto;
+}
+
+/* 页面标题 */
+.obos-home .markdown-preview-sizer > div > h1 {
+  font-size: 2.2em;
+  letter-spacing: -0.02em;
+  border-bottom: none;
+}
+
+/* 板块标题：卡片感分隔 */
+.obos-home h2 {
+  margin-top: 2.2em;
+  padding-bottom: 0.35em;
+  border-bottom: 2px solid var(--background-modifier-border);
+  font-size: 1.35em;
+}
+
+/* 嵌入的 Bases 视图：去掉嵌入框边框，融入页面 */
+.obos-home .internal-embed.file-embed,
+.obos-home .internal-embed {
+  border: none;
+  background: transparent;
+}
+
+/* 剧集卡片：海报圆角 + 阴影 + 悬浮效果 */
+.bases-cards-item {
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.bases-cards-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* 隐藏主屏的 frontmatter 属性区 */
+.obos-home .metadata-container {
+  display: none;
+}
+
+/* ===== 文章阅读页排版 ===== */
+.markdown-reading-view .markdown-preview-sizer {
+  font-size: 1.02em;
+  line-height: 1.75;
+}

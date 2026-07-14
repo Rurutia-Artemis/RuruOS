@@ -1,0 +1,72 @@
+filters:
+  and:
+    - file.inFolder("30-Media/Dramas")
+    - type == "drama"
+formulas:
+  进度: 'current_episode.toString() + " / " + episodes.toString()'
+properties:
+  note.status:
+    displayName: 状态
+  note.platform:
+    displayName: 平台
+  formula.进度:
+    displayName: 进度
+  note.rating:
+    displayName: 评分
+views:
+  - type: cards
+    name: 在追
+    filters:
+      and:
+        - status == "在追"
+    order:
+      - formula.进度
+      - note.platform
+    sort:
+      - property: note.added
+        direction: DESC
+    image: note.poster
+    imageFit: cover
+    imageAspectRatio: 0.68
+    cardSize: 170
+  - type: cards
+    name: 想看
+    filters:
+      and:
+        - status == "想看"
+    order:
+      - note.platform
+      - note.notes
+    sort:
+      - property: note.added
+        direction: DESC
+    image: note.poster
+    imageFit: cover
+    imageAspectRatio: 0.68
+    cardSize: 170
+  - type: cards
+    name: 看完
+    filters:
+      and:
+        - status == "看完"
+    order:
+      - note.rating
+    sort:
+      - property: note.added
+        direction: DESC
+    image: note.poster
+    imageFit: cover
+    imageAspectRatio: 0.68
+    cardSize: 170
+  - type: table
+    name: 全部管理
+    order:
+      - file.name
+      - note.status
+      - note.current_episode
+      - note.episodes
+      - note.platform
+      - note.rating
+    sort:
+      - property: note.status
+        direction: ASC

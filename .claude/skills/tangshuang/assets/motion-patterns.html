@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>糖霜动效模式库 · 参考实现 v7.1</title>
+<!--
+  糖霜（Tangshuang）· 动效模式库参考实现 v7.1 · 2026-07-13
+  SKILL.md「动效模式库」章节的 1:1 可跑参考：每个模式一段带名字注释的 CSS/JS，直接拷对应块。
+  上半「母版区」与 ruru-template.html 逐字一致——禁手改；母版区之后按模式分块。
+  已毙勿收：果冻积木字、玻璃糖罩、均匀无主次的整齐弹入。
+-->
+<style>
+
+/* ╔═══════ 糖霜母版区 · 逐字禁手改（唯一母版 assets/ruru-template.html）═══════╗
+   tokens / 六主题 / 组件 CSS 只在母版改，改完整段同步到每个页面。
+   本页专属样式一律写在下方闭合标记之后。 */
+:root {
+  --berry: #ff8fab; --peach: #ffab76; --butter: #ffd66b;
+  --mint: #6fd8b4; --sky: #7db8f7; --taro: #b9a5f5;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --display: 'Yuanti SC', 'Hiragino Maru Gothic ProN', 'PingFang SC', sans-serif;
+  --sans: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+}
+/* —— 六套主题底（禁改 hex，可整套增删）—— */
+body[data-theme="cream"] { color-scheme: light; --bg:#faf3ea; --bg2:#f3e6dd; --card:rgba(255,255,255,0.78); --card-bd:rgba(216,180,150,0.35); --ink:#4a3b33; --muted:#a5907f; --line:rgba(180,140,110,0.18); --frost:rgba(255,255,255,0.62); --frost-bd:rgba(190,150,120,0.3); --input:rgba(255,252,246,0.9); --sticker:#4a3427; --shadow:0 16px 40px rgba(160,120,80,0.16); --note-bg:color-mix(in srgb, var(--butter) 9%, #fffdf8); --note-bd:color-mix(in srgb, var(--butter) 45%, transparent); }
+body[data-theme="matcha"] { color-scheme: light; --bg:#eef4e4; --bg2:#e2ecd4; --card:rgba(255,255,255,0.8); --card-bd:rgba(160,190,130,0.35); --ink:#3e4a33; --muted:#8ba07a; --line:rgba(130,160,100,0.2); --frost:rgba(255,255,255,0.62); --frost-bd:rgba(140,175,110,0.32); --input:rgba(253,255,248,0.9); --sticker:#384a2c; --shadow:0 16px 40px rgba(110,140,80,0.15); --note-bg:color-mix(in srgb, var(--butter) 9%, #fdfff6); --note-bd:color-mix(in srgb, var(--mint) 40%, transparent); }
+body[data-theme="soda"] { color-scheme: light; --bg:#e9f3f8; --bg2:#dcebf4; --card:rgba(255,255,255,0.8); --card-bd:rgba(130,175,205,0.35); --ink:#35464e; --muted:#7d99a8; --line:rgba(100,150,180,0.2); --frost:rgba(255,255,255,0.62); --frost-bd:rgba(110,160,195,0.32); --input:rgba(250,253,255,0.9); --sticker:#2d434f; --shadow:0 16px 40px rgba(80,130,160,0.15); --note-bg:color-mix(in srgb, var(--butter) 8%, #fbfdff); --note-bd:color-mix(in srgb, var(--sky) 40%, transparent); }
+body[data-theme="peachtea"] { color-scheme: light; --bg:#fdeee4; --bg2:#f8e0d2; --card:rgba(255,255,255,0.8); --card-bd:rgba(225,165,130,0.38); --ink:#4e3a30; --muted:#b08c78; --line:rgba(200,140,105,0.2); --frost:rgba(255,255,255,0.62); --frost-bd:rgba(210,150,115,0.32); --input:rgba(255,251,247,0.9); --sticker:#4c3126; --shadow:0 16px 40px rgba(180,110,70,0.15); --note-bg:color-mix(in srgb, var(--butter) 9%, #fffbf6); --note-bd:color-mix(in srgb, var(--peach) 45%, transparent); }
+body[data-theme="berrynight"] { color-scheme: dark; --bg:#2f2358; --bg2:#241a49; --card:rgba(255,255,255,0.11); --card-bd:rgba(255,190,220,0.26); --ink:#f7eefa; --muted:#beb0d8; --line:rgba(255,190,220,0.18); --frost:rgba(255,255,255,0.10); --frost-bd:rgba(255,255,255,0.18); --input:rgba(12,8,24,0.45); --sticker:#43273a; --shadow:0 18px 44px rgba(8,4,18,0.5); --note-bg:color-mix(in srgb, var(--butter) 13%, rgba(255,255,255,0.10)); --note-bd:color-mix(in srgb, var(--butter) 38%, transparent); }
+body[data-theme="grapenight"] { color-scheme: dark; --bg:#251c3e; --bg2:#1b1430; --card:rgba(255,255,255,0.10); --card-bd:rgba(200,180,255,0.24); --ink:#f2edfa; --muted:#a99cc9; --line:rgba(200,180,255,0.17); --frost:rgba(255,255,255,0.10); --frost-bd:rgba(255,255,255,0.17); --input:rgba(10,7,20,0.45); --sticker:#3a2a4e; --shadow:0 18px 44px rgba(5,3,14,0.55); --note-bg:color-mix(in srgb, var(--butter) 12%, rgba(255,255,255,0.09)); --note-bd:color-mix(in srgb, var(--butter) 35%, transparent); }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  /* v7.0：渐变禁用 fixed attachment——Artifact/iframe 里会断层露白 */
+  background: linear-gradient(176deg, var(--bg) 0%, var(--bg2) 100%);
+  background-color: var(--bg);
+  min-height: 100vh;
+  color: var(--ink); font-family: var(--sans);
+  font-size: 16px; line-height: 1.7; padding-bottom: 80px;
+  transition: background 0.5s ease, color 0.5s ease;
+}
+button { font-family: var(--sans); cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2.5px solid var(--sky); outline-offset: 2px; }
+a { color: color-mix(in srgb, var(--sky) 70%, var(--ink)); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+a:focus-visible { outline: 2.5px solid var(--sky); outline-offset: 2px; }
+
+/* ============ 粒子层（樱花/细雨/落雪/萤火，三项可调） ============ */
+.fx { position: fixed; inset: 0; pointer-events: none; z-index: 999; overflow: hidden; filter: saturate(var(--sat, 1)); }
+.fx i { position: absolute; display: block; top: -8vh; left: var(--x); animation: fxfall var(--d) linear var(--dl) infinite; opacity: calc(var(--pvis, 0.85) * var(--vis, 1)); }
+.fx i > b { display: block; animation: fxsway calc(var(--d) / 3.2) ease-in-out var(--dl) infinite alternate; }
+/* --dx = 整程横向漂移量（方向角驱动），--tilt = 雨丝倾角 */
+@keyframes fxfall { to { transform: translate(var(--dx, 0px), 118vh); } }
+@keyframes fxsway { from { transform: translateX(calc(var(--sw) * -1)) rotate(0deg); } to { transform: translateX(var(--sw)) rotate(200deg); } }
+.fx .petal { --pvis: 0.85; }
+.fx .petal > b { width: var(--s); height: calc(var(--s) * 0.86); background: linear-gradient(135deg, #ffc7d6, var(--berry) 70%); border-radius: 68% 6% 68% 6%; }
+.fx .rain { --pvis: 0.6; }
+.fx .rain > b { width: 1.5px; height: 22px; animation: none; background: linear-gradient(180deg, transparent, var(--sky)); transform: rotate(var(--tilt, 9deg)); }
+.fx .snow { --pvis: 0.85; }
+.fx .snow > b { width: var(--s); height: var(--s); border-radius: 50%; background: #fff; filter: blur(0.6px); box-shadow: 0 0 6px rgba(255,255,255,0.6); }
+.fx .fly { --pvis: 1; top: auto; bottom: -4vh; animation-name: fxrise; }
+/* 浅色主题下粒子加深一档，否则白雪浅雨贴在奶油底上隐形 */
+body:not([data-theme*="night"]) .fx .rain > b { background: linear-gradient(180deg, transparent, #4d90d8); }
+body:not([data-theme*="night"]) .fx .snow > b { background: #c9dced; box-shadow: 0 0 6px rgba(110,155,200,0.55); }
+body:not([data-theme*="night"]) .fx .fly > b { background: #f0b23c; box-shadow: 0 0 12px 3px rgba(225,150,35,0.55); }
+@keyframes fxrise { to { transform: translate(var(--dx, 0px), -118vh); } }
+.fx .fly > b { width: var(--s); height: var(--s); border-radius: 50%; background: var(--butter); box-shadow: 0 0 12px 3px rgba(255,214,107,0.55); animation: fxsway calc(var(--d)/3) ease-in-out infinite alternate, fxflick 2.4s ease-in-out var(--dl) infinite alternate; }
+@keyframes fxflick { from { opacity: 0.15; } to { opacity: 0.9; } }
+@media (prefers-reduced-motion: reduce) { .fx { display: none; } * { animation-duration: 0.01s !important; transition-duration: 0.01s !important; } }
+
+/* ============ 组件：糖霜胶囊 ============ */
+.pill {
+  border: 1.5px solid color-mix(in srgb, var(--pc, var(--peach)) 45%, transparent);
+  background: color-mix(in srgb, var(--pc, var(--peach)) 16%, var(--frost));
+  color: var(--ink); border-radius: 12px; padding: 8px 18px;
+  font-size: 0.9em; font-weight: 800;
+  transition: transform 0.2s var(--spring), background 0.2s ease, box-shadow 0.2s ease;
+}
+.pill:hover { background: color-mix(in srgb, var(--pc, var(--peach)) 28%, var(--frost)); transform: translateY(-1.5px); }
+.pill:active { transform: translateY(1px) scale(0.97); }
+.pill.on {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pc, var(--peach)) 82%, #fff), var(--pc, var(--peach)));
+  border-color: transparent; color: var(--sticker);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--pc, var(--peach)) 55%, #7a4a20), 0 6px 14px color-mix(in srgb, var(--pc, var(--peach)) 42%, transparent);
+  transform: translateY(-1.5px);
+}
+.pill .n { display: inline-block; min-width: 18px; text-align: center; background: rgba(255,255,255,0.4); border-radius: 8px; padding: 0 5px; font-size: 0.88em; margin-left: 4px; font-variant-numeric: tabular-nums; }
+.pill.on .n { background: rgba(255,255,255,0.55); }
+body[data-theme*="night"] .pill .n { background: rgba(255,255,255,0.14); }
+body[data-theme*="night"] .pill.on .n { background: rgba(255,255,255,0.5); }
+
+/* ============ 组件：果冻主钮 ============ */
+.jelly {
+  border: none; border-radius: 15px; padding: 11px 22px;
+  text-decoration: none; display: inline-block; /* 兼容 <a> 当主钮用 */
+  font-family: var(--display); font-weight: 800; font-size: 0.94em;
+  color: var(--sticker);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--jc, var(--taro)) 86%, #fff), var(--jc, var(--taro)));
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--jc, var(--taro)) 58%, #6a4a30), 0 8px 18px color-mix(in srgb, var(--jc, var(--taro)) 38%, transparent);
+  transition: transform 0.16s var(--spring), box-shadow 0.16s ease;
+}
+.jelly:hover { transform: translateY(-2px); }
+.jelly:active { transform: translateY(3px) scale(0.97); box-shadow: 0 1px 0 color-mix(in srgb, var(--jc, var(--taro)) 58%, #6a4a30); }
+.jelly:disabled { filter: saturate(0.25) opacity(0.55); transform: none; box-shadow: none; cursor: not-allowed; }
+.jc-berry { --jc: var(--berry); } .jc-peach { --jc: var(--peach); } .jc-butter { --jc: var(--butter); }
+.jc-mint { --jc: var(--mint); } .jc-sky { --jc: var(--sky); } .jc-taro { --jc: var(--taro); }
+
+/* ============ 组件：图标圆钮 / 卡片 / 贴纸标签 / 便利贴 ============ */
+.icon-round { width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid var(--frost-bd); background: var(--frost); color: var(--ink); font-size: 1em; font-weight: 800; display: inline-grid; place-items: center; transition: transform 0.2s var(--spring), background 0.2s ease; }
+.icon-round:hover { transform: scale(1.1) rotate(-4deg); background: color-mix(in srgb, var(--frost) 55%, rgba(255,255,255,0.5)); }
+/* 方章功能钮（v7.0 质感定稿）：65px 果冻方章，--bc 传色；图标必须手绘 SVG 40px，字符/emoji 禁 */
+.stamp {
+  position: relative; overflow: hidden;
+  width: 65px; height: 65px; border-radius: 18px; border: none;
+  display: inline-grid; place-items: center;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bc, var(--taro)) 86%, #fff), var(--bc, var(--taro)));
+  box-shadow:
+    inset 0 1.5px 0 rgba(255,255,255,0.55),
+    inset 0 -5px 10px color-mix(in srgb, var(--bc, var(--taro)) 62%, #7a4630),
+    0 4px 0 color-mix(in srgb, var(--bc, var(--taro)) 58%, #6a4a30),
+    0 9px 20px color-mix(in srgb, var(--bc, var(--taro)) 42%, transparent);
+  transition: transform 0.18s var(--spring);
+}
+.stamp::before {
+  content: ''; position: absolute; left: 7px; right: 7px; top: 4px; height: 34%;
+  border-radius: 10px 10px 46% 46%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.05));
+  pointer-events: none;
+}
+.stamp:hover { transform: translateY(-3px); }
+.stamp:active { transform: translateY(2px) scale(0.96); }
+.stamp svg { width: 40px; height: 40px; display: block; }
+/* 渐变名牌字（v7.0 拍板）：两行名牌制——上行 .grad-hello 小字，下行 .grad-name 糖果渐变大字 */
+.grad-hello { display: block; font-size: 1.02em; font-weight: 800; color: var(--muted); letter-spacing: 0.06em; }
+.grad-name {
+  display: inline-block; font-family: var(--display); font-weight: 800;
+  font-size: 2.7em; line-height: 1.15; letter-spacing: 0.02em;
+  background: linear-gradient(118deg, var(--berry), var(--peach) 48%, var(--taro));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 3px 12px color-mix(in srgb, var(--berry) 30%, transparent));
+}
+/* 参数弹层：调节项多于两个时收进一颗按钮，点开这个面板 */
+.pop { position: absolute; top: calc(100% + 12px); right: 0; z-index: 1002; width: 308px; padding: 16px 18px 14px; background: var(--card); border: 1.5px solid var(--card-bd); border-radius: 20px; box-shadow: var(--shadow); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); transform-origin: top right; animation: popin 0.28s var(--spring); }
+@keyframes popin { from { opacity: 0; transform: scale(0.92) translateY(-6px); } }
+.pop.is-hidden { display: none; }
+.pop-title { font-family: var(--display); font-weight: 800; font-size: 0.96em; margin-bottom: 10px; }
+.pop-row { display: flex; align-items: center; gap: 10px; margin: 9px 0; }
+.pop-row label { flex: 0 0 32px; font-size: 0.74em; font-weight: 800; letter-spacing: 0.08em; color: var(--muted); }
+.pop-row input[type="range"] { flex: 1; accent-color: var(--berry); }
+.pop-row .val { flex: 0 0 44px; text-align: right; font-size: 0.76em; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.canvas { background: var(--card); border: 1.5px solid var(--card-bd); border-radius: 26px; box-shadow: var(--shadow); padding: clamp(18px, 3vw, 32px); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.act-tag { display: inline-flex; align-items: center; gap: 8px; font-family: var(--display); font-weight: 800; font-size: 1.06em; background: var(--card); border: 1.5px solid var(--card-bd); border-radius: 14px 14px 14px 4px; padding: 8px 18px; box-shadow: var(--shadow); transform: rotate(-1deg); margin-bottom: 6px; }
+.act-tag em { font-style: normal; font-size: 0.72em; font-weight: 800; color: var(--sticker); background: var(--tag, var(--butter)); border-radius: 7px; padding: 2px 9px; }
+.note { padding: 12px 16px; background: var(--note-bg); border: 1.5px dashed var(--note-bd); border-radius: 16px; transform: rotate(-0.3deg); }
+.stage { max-width: 1240px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 44px); }
+h1, h2, h3 { font-family: var(--display); font-weight: 800; letter-spacing: 0.01em; text-wrap: balance; }
+.muted { color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ============ 主题切换条 ============ */
+.bar { position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px; padding: 12px clamp(16px, 4vw, 44px); background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 1.5px dashed var(--line); }
+.bar-label { font-size: 0.72em; font-weight: 800; letter-spacing: 0.12em; color: var(--muted); }
+.swatch { width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid transparent; padding: 0; background: var(--sw); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.55); transition: transform 0.25s var(--spring); }
+.swatch:hover { transform: scale(1.15); }
+.swatch.on { border-color: var(--ink); transform: scale(1.12); }
+/* ╚═══════ 母版区结束 · 以下写本页专属样式（可自由改）═══════╝ */
+
+/* ── 模式库页面壳（演示卡布局，非模式本体） ── */
+.bar-name { font-family: var(--display); font-weight: 800; display: flex; align-items: center; gap: 8px; }
+.bar-space { flex: 1; }
+.act { margin-top: 56px; }
+.demo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-top: 10px; }
+.demo-card h3 { margin: 0 0 2px; font-size: 1.04em; display: flex; align-items: center; gap: 8px; }
+.demo-card h3 .tag { font-size: 0.66em; font-weight: 800; color: var(--sticker); background: var(--dc, var(--butter)); border-radius: 7px; padding: 2px 9px; }
+.demo-card .how { margin: 0 0 12px; font-size: 0.82em; color: var(--muted); }
+.demo-stage { position: relative; overflow: hidden; border: 1.5px dashed var(--line); border-radius: 18px; min-height: 240px; display: grid; place-items: center; padding: 18px; }
+.demo-foot { display: flex; justify-content: flex-end; margin-top: 12px; }
+.wide { grid-column: 1 / -1; }
+.replay { padding: 8px 16px; font-size: 0.84em; }
+.gummy { display: inline-block; width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(180deg, color-mix(in srgb, var(--gc, var(--taro)) 80%, #fff), var(--gc, var(--taro))); box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.55), 0 3px 0 color-mix(in srgb, var(--gc, var(--taro)) 58%, #6a4a30), 0 6px 12px color-mix(in srgb, var(--gc, var(--taro)) 40%, transparent); }
+
+/* ═══ 模式1 · 开场编排（hero 一次性，⚠️ 迭代中）═══
+   分角色进场：问候语轻落 → 名牌字破土 → 按钮上浮 → 糖果落座 → 流光点睛。
+   弹簧只给糖不给字；主体 0.9s 收完，流光是装饰尾巴。 */
+.opening { display: grid; justify-items: center; gap: 10px; text-align: center; }
+.opening .el { opacity: 0; }
+.opening.play .op-hello { animation: opHello 0.3s var(--ease) 0s both; }
+@keyframes opHello { from { opacity: 0; transform: translateY(-7px); } to { opacity: 1; transform: none; } }
+.op-stack { display: grid; position: relative; }
+.op-stack > span { grid-area: 1 / 1; }
+.opening.play .op-name { animation: opName 0.5s var(--ease) 0.08s both; }
+@keyframes opName {
+  from { opacity: 0.001; clip-path: inset(0 -8% 100% -8%); transform: translateY(0.32em); }
+  to { opacity: 1; clip-path: inset(-30% -8% -22% -8%); transform: none; }
+}
+/* 点睛：名字落成后，一道白高光扫过（单次） */
+.op-shine {
+  opacity: 0;
+  background: linear-gradient(105deg, transparent 42%, rgba(255,255,255,0.95) 50%, transparent 58%);
+  background-size: 260% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+  filter: none;
+}
+.opening.play .op-shine { animation: opShine 0.9s var(--ease) 0.62s both; }
+@keyframes opShine { from { opacity: 1; background-position: 130% 0; } to { opacity: 1; background-position: -60% 0; } }
+/* 点睛：两颗星光弹出后低幅呼吸 */
+.op-spark { position: absolute; width: 16px; height: 16px; opacity: 0; }
+.opening.play .op-spark { animation: opSparkIn 0.35s var(--spring) var(--dl) both, s1tw 2.6s ease-in-out calc(var(--dl) + 0.5s) infinite alternate; }
+@keyframes opSparkIn { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: scale(1); } }
+.opening.play .op-btn { animation: opUp 0.32s var(--ease) var(--dl) both; }
+@keyframes opUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+/* 糖果从上方掉下弹簧落座（掉落比原地放大更有「撒糖」感） */
+.opening.play .op-gum { animation: opDrop 0.5s var(--spring) var(--dl) both; }
+@keyframes opDrop { from { opacity: 0; transform: translateY(-70px); } 30% { opacity: 1; } to { opacity: 1; transform: none; } }
+.op-cands { display: flex; gap: 12px; }
+
+/* ═══ 模式2 · 滚动飞入 + 贴纸盖章（幕与项目卡）═══
+   卡片带一点旋转飞上来，角标像盖章一样拍下去；IO 触发，离开复位可反复看。 */
+.flyin-scroll { width: 100%; height: 230px; overflow-y: auto; scrollbar-gutter: stable; display: grid; gap: 12px; align-content: start; padding: 6px 10px; }
+.flyin-hint { text-align: center; font-size: 0.8em; color: var(--muted); font-weight: 800; padding: 6px 0 60px; }
+.flyin-tile { border: 1.5px solid var(--frost-bd); background: var(--frost); border-radius: 14px; padding: 10px 14px; font-size: 0.86em; opacity: 0; transform: translateY(44px) rotate(2.5deg) scale(0.94); transition: opacity 0.6s var(--ease), transform 0.65s var(--spring); }
+.flyin-tile b { font-family: var(--display); }
+.flyin-tile.in { opacity: 1; transform: none; }
+.flyin-tile .tag { display: inline-block; margin-left: 8px; font-size: 0.72em; font-weight: 800; color: var(--sticker); background: var(--dc, var(--butter)); border-radius: 6px; padding: 1px 7px; transform: scale(1.7) rotate(-10deg); opacity: 0; transition: transform 0.5s var(--spring) 0.25s, opacity 0.3s ease 0.25s; }
+.flyin-tile.in .tag { transform: none; opacity: 1; }
+
+/* ═══ 模式3 · 景深糖云（背景层，可与任意主角叠）═══
+   四团糖色光云慢漂 + 指针分层视差；容器必须 overflow hidden。 */
+.cloud-stage { min-height: 300px; }
+.cloud-layer { position: absolute; inset: 0; transition: transform 0.35s var(--ease); pointer-events: none; }
+.cloud-blob { position: absolute; width: var(--bs); height: var(--bs); border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--bc) 55%, transparent), transparent); filter: blur(26px); animation: cloudDrift var(--bd) ease-in-out var(--bl) infinite alternate; }
+@keyframes cloudDrift { from { transform: translate(0, 0) scale(1); } to { transform: translate(34px, -26px) scale(1.14); } }
+.cloud-core { position: relative; text-align: center; }
+
+/* ═══ 模式4 · 爆糖开关（全站彩蛋，动效面板开关，默认关）═══
+   鼠标糖尾 + 点击爆糖；粒子 animationend 即移除。 */
+.burst-field { width: 100%; height: 230px; border-radius: 18px; display: grid; place-items: center; font-weight: 800; color: var(--muted); cursor: crosshair; user-select: none; }
+.burst-dot, .burst-fly { position: absolute; pointer-events: none; }
+.burst-dot { width: var(--s); height: var(--s); background: linear-gradient(135deg, color-mix(in srgb, var(--mc) 60%, #fff), var(--mc)); border-radius: 68% 6% 68% 6%; animation: burstFade 0.9s var(--ease) forwards; }
+@keyframes burstFade { from { opacity: 0.9; transform: rotate(var(--rot)) scale(1); } to { opacity: 0; transform: rotate(calc(var(--rot) + 90deg)) translateY(14px) scale(0.15); } }
+.burst-fly { width: var(--s); height: var(--s); background: linear-gradient(180deg, color-mix(in srgb, var(--mc) 70%, #fff), var(--mc)); border-radius: 50%; animation: burstFly 0.75s var(--ease) forwards; }
+@keyframes burstFly { from { opacity: 1; transform: translate(0, 0) scale(1); } to { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.25); } }
+
+/* ═══ 模式5 · 流光巨字（主角）═══
+   巨字渐变慢流 + 每 3.6s 一道白高光扫过（没这道闪用户看不出在动）+ 角落星光。 */
+.glow-stack { display: grid; }
+.glow-stack > span { grid-area: 1 / 1; }
+.glow-name {
+  font-family: var(--display); font-weight: 800; line-height: 1.05;
+  font-size: clamp(4em, 11vw, 7em); letter-spacing: 0.02em;
+  background: linear-gradient(110deg, var(--berry), var(--peach) 22%, var(--butter) 46%, var(--taro) 74%, var(--berry) 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 6px 22px color-mix(in srgb, var(--berry) 38%, transparent));
+  animation: glowFlow 5s linear infinite;
+}
+@keyframes glowFlow { to { background-position: 220% 0; } }
+.glow-shine {
+  background: linear-gradient(105deg, transparent 42%, rgba(255,255,255,0.95) 50%, transparent 58%);
+  background-size: 260% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+  filter: none; animation: glowSweep 3.6s var(--ease) infinite;
+}
+@keyframes glowSweep {
+  0% { background-position: 130% 0; }
+  45% { background-position: -60% 0; }
+  100% { background-position: -60% 0; }
+}
+.s1-spark { position: absolute; width: 22px; height: 22px; animation: s1tw 2.6s ease-in-out var(--dl) infinite alternate; }
+@keyframes s1tw { from { opacity: 0.15; transform: scale(0.6) rotate(0deg); } to { opacity: 1; transform: scale(1.1) rotate(40deg); } }
+
+/* ═══ 模式6 · 拍立得手账墙（主角）═══
+   白框 + 和纸胶带 + 各自旋转；hover 摆正抬起；照片位交付时换真图。 */
+.pola-stage { min-height: 320px; }
+.pola-wall { position: relative; width: min(100%, 560px); height: 290px; }
+.pola-photo { position: absolute; width: 182px; padding: 10px 10px 40px; border-radius: 6px; background: #fffdf8; box-shadow: 0 3px 8px rgba(90,60,40,0.14), 0 14px 30px rgba(90,60,40,0.16); transform: rotate(var(--rot)); transition: transform 0.22s var(--ease), box-shadow 0.22s ease; }
+@media (hover: hover) and (pointer: fine) {
+  .pola-photo:hover { transform: rotate(0deg) translateY(-10px) scale(1.05); box-shadow: 0 6px 12px rgba(90,60,40,0.16), 0 24px 44px rgba(90,60,40,0.22); z-index: 5; }
+}
+.pola-pic { position: relative; overflow: hidden; height: 150px; border-radius: 4px; display: grid; place-items: center; }
+.pola-cap { text-align: center; font-family: var(--display); font-weight: 800; font-size: 0.76em; color: #6b5a4e; margin-top: 9px; }
+.pola-tape { position: absolute; top: -11px; left: 50%; width: 76px; height: 24px; border-radius: 2px; transform: translateX(-50%) rotate(var(--tr)); background: color-mix(in srgb, var(--tc, var(--taro)) 42%, rgba(255,255,255,0.55)); opacity: 0.9; box-shadow: 0 1px 3px rgba(90,60,40,0.12); }
+.pola-petal { position: absolute; width: 16px; height: 14px; border-radius: 68% 6% 68% 6%; background: linear-gradient(135deg, #ffc7d6, var(--berry) 70%); }
+
+/* ═══ 模式7 · 可戳的巨型果冻（主角）═══
+   外层弹性跟随指针，内层按压压扁 + 花瓣迸出；两层分开 transform 才不打架。 */
+.poke-stage { min-height: 300px; cursor: pointer; touch-action: manipulation; }
+.poke-follow { transition: transform 0.3s var(--spring); will-change: transform; }
+.poke-body { display: grid; place-items: center; transition: transform 0.12s var(--ease); animation: pokeBreathe 4s ease-in-out infinite alternate; }
+@keyframes pokeBreathe { to { transform: scale(1.025); } }
+.poke-stage.squish .poke-body { transform: scale(0.86, 0.92); }
+.poke-body svg { width: 150px; filter: drop-shadow(0 16px 30px color-mix(in srgb, var(--berry) 40%, transparent)); }
+.poke-pop { position: absolute; width: var(--s); height: calc(var(--s) * 0.86); border-radius: 68% 6% 68% 6%; background: linear-gradient(135deg, #ffc7d6, var(--berry) 70%); pointer-events: none; animation: pokeFly 0.7s var(--ease) forwards; }
+@keyframes pokeFly { from { opacity: 1; transform: translate(0, 0) rotate(0deg); } to { opacity: 0; transform: translate(var(--tx), var(--ty)) rotate(140deg); } }
+
+/* ═══ 模式8 · 日签卡（主角）═══
+   3D 翻面的「今日一页」；日期用 JS 算，每天自己换。 */
+.daily-scene { perspective: 1100px; }
+.daily-card { position: relative; width: min(296px, 74vw); height: 200px; transform-style: preserve-3d; transition: transform 0.56s var(--ease); cursor: pointer; }
+.daily-card.flip { transform: rotateY(180deg); }
+.daily-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 20px; background: var(--card); border: 1.5px solid var(--card-bd); box-shadow: var(--shadow); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding: 18px 22px; }
+.daily-back { transform: rotateY(180deg); }
+.daily-date { font-family: var(--display); font-weight: 800; font-size: 2.1em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.daily-week { font-size: 0.78em; font-weight: 800; letter-spacing: 0.1em; color: var(--muted); }
+.daily-line { margin-top: 10px; font-size: 0.9em; }
+.daily-mark { position: absolute; right: 16px; top: 14px; width: 58px; height: 58px; border: 2px dashed color-mix(in srgb, var(--berry) 55%, transparent); border-radius: 50%; display: grid; place-items: center; text-align: center; font-size: 0.56em; font-weight: 800; line-height: 1.35; color: var(--muted); transform: rotate(-12deg); }
+.daily-hint { position: absolute; bottom: 12px; right: 18px; font-size: 0.68em; font-weight: 800; color: var(--muted); }
+.daily-back .note { margin-top: 10px; font-size: 0.84em; }
+</style>
+</head>
+<body data-theme="cream">
+
+<header class="bar">
+  <span class="bar-name">
+    <svg viewBox="0 0 48 48" style="width:24px"><defs><linearGradient id="gBmp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8fab"/><stop offset="1" stop-color="#b9a5f5"/></linearGradient></defs><rect x="2" y="2" width="44" height="44" rx="14" fill="url(#gBmp)"/><ellipse cx="17" cy="11" rx="9" ry="4.5" fill="#fff" opacity="0.36" transform="rotate(-14 17 11)"/><text x="24" y="34.5" text-anchor="middle" font-family="Yuanti SC, Hiragino Maru Gothic ProN, sans-serif" font-size="29" font-weight="800" fill="#fff">R</text></svg>
+    动效模式库 · v7.1
+  </span>
+  <span class="bar-space"></span>
+  <span class="bar-label">主题</span>
+  <span id="themePick">
+    <button class="swatch on" data-t="cream" style="--sw:#faf3ea" title="奶油白天"></button>
+    <button class="swatch" data-t="matcha" style="--sw:#e4eed2" title="抹茶拿铁"></button>
+    <button class="swatch" data-t="soda" style="--sw:#d9ecf6" title="海盐汽水"></button>
+    <button class="swatch" data-t="peachtea" style="--sw:#fbe3d2" title="蜜桃乌龙"></button>
+    <button class="swatch" data-t="berrynight" style="--sw:#2f2358" title="莓果夜晚"></button>
+    <button class="swatch" data-t="grapenight" style="--sw:#1e1633" title="葡萄夜巡"></button>
+  </span>
+</header>
+
+<main class="stage">
+
+  <section class="act">
+    <div class="act-tag" style="--tag:var(--sky)"><em>进场类</em>模式 1-2</div>
+    <div class="demo-grid">
+
+      <div class="canvas demo-card" style="--dc:var(--berry)">
+        <h3><span class="tag">模式1</span>开场编排 <span class="tag" style="--dc:var(--butter)">迭代中</span></h3>
+        <p class="how">问候语轻落 → 名字破土 → 按钮跟上 → 糖果掉落弹座 → 一道流光扫过点睛。弹簧只给糖不给字。</p>
+        <div class="demo-stage">
+          <div class="opening" id="opening">
+            <span class="el op-hello grad-hello">晚上好 · 东京的灯都亮了</span>
+            <span class="op-stack">
+              <span class="el op-name grad-name">LULU</span>
+              <span class="el op-shine grad-name" aria-hidden="true">LULU</span>
+              <svg class="op-spark" style="left:-24px; top:6px; --dl:0.72s" viewBox="0 0 24 24" fill="var(--butter)"><path d="M12 2 L14.2 9.8 L22 12 L14.2 14.2 L12 22 L9.8 14.2 L2 12 L9.8 9.8 Z"/></svg>
+              <svg class="op-spark" style="right:-22px; bottom:8px; --dl:0.82s" viewBox="0 0 24 24" fill="var(--berry)"><path d="M12 2 L14.2 9.8 L22 12 L14.2 14.2 L12 22 L9.8 14.2 L2 12 L9.8 9.8 Z"/></svg>
+            </span>
+            <span class="el op-btn" style="--dl:0.24s"><span class="jelly jc-berry">看看我在做什么</span></span>
+            <span class="op-cands">
+              <span class="el op-gum gummy" style="--dl:0.34s; --gc:var(--berry)"></span>
+              <span class="el op-gum gummy" style="--dl:0.41s; --gc:var(--butter)"></span>
+              <span class="el op-gum gummy" style="--dl:0.48s; --gc:var(--sky)"></span>
+            </span>
+          </div>
+        </div>
+        <div class="demo-foot"><button class="jelly jc-taro replay" data-for="opening">再看一遍</button></div>
+      </div>
+
+      <div class="canvas demo-card" style="--dc:var(--mint)">
+        <h3><span class="tag">模式2</span>滚动飞入 + 贴纸盖章</h3>
+        <p class="how">在格子里上下滚：卡片带旋转飞上来，角标拍章。用在三幕和项目卡。</p>
+        <div class="demo-stage" style="padding:6px">
+          <div class="flyin-scroll" id="flyin">
+            <div class="flyin-hint">往下滚这一格试试</div>
+            <div class="flyin-tile" style="--dc:var(--berry)"><b>RuruOS</b><span class="tag">个人系统</span><br>长在 Obsidian 里的个人中枢。</div>
+            <div class="flyin-tile" style="--dc:var(--taro)"><b>Rurutia</b><span class="tag">桌面应用</span><br>Coding Agent 的驾驶舱。</div>
+            <div class="flyin-tile" style="--dc:var(--sky)"><b>卡牌行情站</b><span class="tag">进行中</span><br>每周自动跑一轮更新。</div>
+            <div class="flyin-tile" style="--dc:var(--butter)"><b>糖霜</b><span class="tag">设计系统</span><br>这一页就是用它拼的。</div>
+            <div class="flyin-tile" style="--dc:var(--mint)"><b>审美罗盘</b><span class="tag">审美引擎</span><br>把偏好翻译成设计方向。</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="act">
+    <div class="act-tag" style="--tag:var(--taro)"><em>氛围类</em>模式 3-4 · 不占签名额度</div>
+    <div class="demo-grid">
+
+      <div class="canvas demo-card wide" style="--dc:var(--taro)">
+        <h3><span class="tag">模式3</span>景深糖云（背景层）</h3>
+        <p class="how">四团糖色光云慢漂，指针移动分层视差。给页面加纵深最直接的一层。</p>
+        <div class="demo-stage cloud-stage" id="cloud">
+          <span class="cloud-layer" data-f="0.05"><span class="cloud-blob" style="--bc:var(--berry); --bs:250px; --bd:18s; --bl:0s; left:6%; top:-10%"></span></span>
+          <span class="cloud-layer" data-f="0.09"><span class="cloud-blob" style="--bc:var(--taro); --bs:290px; --bd:23s; --bl:-6s; right:4%; top:16%"></span></span>
+          <span class="cloud-layer" data-f="0.14"><span class="cloud-blob" style="--bc:var(--sky); --bs:200px; --bd:20s; --bl:-11s; left:30%; bottom:-16%"></span></span>
+          <span class="cloud-layer" data-f="0.2"><span class="cloud-blob" style="--bc:var(--butter); --bs:150px; --bd:15s; --bl:-3s; right:26%; bottom:0%"></span></span>
+          <span class="cloud-core">
+            <span class="grad-hello">在糖云前面，字还是那个字</span>
+            <span class="grad-name">LULU</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="canvas demo-card" style="--dc:var(--berry)">
+        <h3><span class="tag">模式4</span>爆糖开关（默认关）</h3>
+        <p class="how">鼠标糖尾 + 点击爆糖。收进动效面板当开关，想玩再开。</p>
+        <div class="demo-stage" style="padding:0">
+          <div class="burst-field" id="burst">在这里移动鼠标 · 点一下爆糖</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="act">
+    <div class="act-tag" style="--tag:var(--berry)"><em>主角类</em>模式 5-8 · 每页选一个</div>
+    <div class="demo-grid">
+
+      <div class="canvas demo-card wide" style="--dc:var(--butter)">
+        <h3><span class="tag">模式5</span>流光巨字</h3>
+        <p class="how">渐变慢流 + 每 3.6 秒一道白高光扫过。没这道「闪」用户看不出在动。</p>
+        <div class="demo-stage" style="min-height:260px">
+          <span class="glow-stack">
+            <span class="glow-name">LULU</span>
+            <span class="glow-name glow-shine" aria-hidden="true">LULU</span>
+          </span>
+          <svg class="s1-spark" style="left:16%; top:24%; --dl:0s" viewBox="0 0 24 24" fill="var(--butter)"><path d="M12 2 L14.2 9.8 L22 12 L14.2 14.2 L12 22 L9.8 14.2 L2 12 L9.8 9.8 Z"/></svg>
+          <svg class="s1-spark" style="right:14%; bottom:22%; --dl:1.2s" viewBox="0 0 24 24" fill="var(--berry)"><path d="M12 2 L14.2 9.8 L22 12 L14.2 14.2 L12 22 L9.8 14.2 L2 12 L9.8 9.8 Z"/></svg>
+        </div>
+      </div>
+
+      <div class="canvas demo-card wide" style="--dc:var(--taro)">
+        <h3><span class="tag">模式6</span>拍立得手账墙</h3>
+        <p class="how">白框 + 和纸胶带 + 各自歪着，摸哪张哪张摆正抬起。交付时换成真照片。</p>
+        <div class="demo-stage pola-stage">
+          <div class="pola-wall">
+            <div class="pola-photo" style="--rot:-7deg; left:2%; top:34px">
+              <span class="pola-tape" style="--tr:-4deg; --tc:var(--mint)"></span>
+              <div class="pola-pic" style="background:linear-gradient(160deg,#ffd9e3,#ffeef3)">
+                <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="#5c2438" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5 L12 4.5 L19.5 10.5 V19 a1.5 1.5 0 0 1 -1.5 1.5 H6 A1.5 1.5 0 0 1 4.5 19 Z" fill="#ffd9e3"/><path d="M12 16.6 c-1.9 -1.3 -3 -2.4 -3 -3.8 a1.8 1.8 0 0 1 3 -1.3 a1.8 1.8 0 0 1 3 1.3 c0 1.4 -1.1 2.5 -3 3.8 Z" fill="#ff8fab" stroke-width="1.1"/></svg>
+              </div>
+              <div class="pola-cap">RuruOS 的家</div>
+            </div>
+            <div class="pola-photo" style="--rot:2.5deg; left:33%; top:4px; z-index:2">
+              <span class="pola-tape" style="--tr:3deg; --tc:var(--berry)"></span>
+              <div class="pola-pic" style="background:linear-gradient(170deg,#dcecfd,#fff0f5)">
+                <span class="pola-petal" style="left:26%; top:22%"></span>
+                <span class="pola-petal" style="left:56%; top:48%; transform:rotate(48deg) scale(1.3)"></span>
+                <span class="pola-petal" style="left:38%; top:70%; transform:rotate(-30deg) scale(0.8)"></span>
+              </div>
+              <div class="pola-cap">四月的目黑川</div>
+            </div>
+            <div class="pola-photo" style="--rot:6deg; left:64%; top:44px">
+              <span class="pola-tape" style="--tr:-2deg; --tc:var(--butter)"></span>
+              <div class="pola-pic" style="background:linear-gradient(150deg,#e8f1fe,#f6efff)">
+                <span style="position:absolute; left:28%; top:26%; width:52px; height:72px; border-radius:6px; background:#fff; border:2px solid #c9defa; box-shadow:0 4px 10px rgba(80,120,180,0.25); transform:rotate(-9deg)"></span>
+                <span style="position:absolute; left:46%; top:34%; width:52px; height:72px; border-radius:6px; background:#fff; border:2px solid #e3c9f5; box-shadow:0 4px 10px rgba(80,120,180,0.25); transform:rotate(8deg)"></span>
+              </div>
+              <div class="pola-cap">收藏册第 12 页</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="canvas demo-card" style="--dc:var(--berry)">
+        <h3><span class="tag">模式7</span>可戳的巨型果冻</h3>
+        <p class="how">跟着鼠标弹性游动，按下压扁、蹦花瓣，松手颤两下弹回。</p>
+        <div class="demo-stage poke-stage" id="poke">
+          <div class="poke-follow" id="pokeF">
+            <div class="poke-body">
+              <svg viewBox="0 0 48 48"><defs><linearGradient id="gBpoke" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8fab"/><stop offset="1" stop-color="#b9a5f5"/></linearGradient></defs><rect x="2" y="2" width="44" height="44" rx="14" fill="url(#gBpoke)"/><ellipse cx="17" cy="11" rx="9" ry="4.5" fill="#fff" opacity="0.36" transform="rotate(-14 17 11)"/><text x="24" y="34.5" text-anchor="middle" font-family="Yuanti SC, Hiragino Maru Gothic ProN, sans-serif" font-size="29" font-weight="800" fill="#fff">R</text></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="canvas demo-card" style="--dc:var(--sky)">
+        <h3><span class="tag">模式8</span>日签卡</h3>
+        <p class="how">今日一页：活日期 + 一句话 + 东京邮戳，点击 3D 翻面。</p>
+        <div class="demo-stage">
+          <div class="daily-scene">
+            <div class="daily-card" id="daily">
+              <div class="daily-face">
+                <div class="daily-week" id="dailyWeek">JULY · 星期日</div>
+                <div class="daily-date num" id="dailyDate">7月13日</div>
+                <div class="daily-line">今天也从一颗糖开始。</div>
+                <div class="daily-mark">東京<br>RURU<br>POST</div>
+                <div class="daily-hint">点一下翻面</div>
+              </div>
+              <div class="daily-face daily-back">
+                <div class="daily-week">今天在忙</div>
+                <div class="note">写在这里的内容每天手动换，<br>或接你自己的数据源。</div>
+                <div class="daily-hint">再点翻回去</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="act">
+    <div class="note" style="max-width:46em; margin:0 auto">
+      用法规则：主角类（5-8）每页选一个；氛围类（3-4）不占签名额度可叠加；开场编排是 hero 一次性；滚动飞入用于幕和卡片。已毙勿再提：果冻积木字、玻璃糖罩、均匀无主次的整齐弹入。悬停一律 (hover:hover) 门控，reduced-motion 由母版全局兜底。
+    </div>
+  </section>
+
+</main>
+
+<script>
+const body = document.body;
+body.dataset.theme = body.dataset.theme || 'cream';
+document.getElementById('themePick').addEventListener('click', e => {
+  const b = e.target.closest('.swatch'); if (!b) return;
+  body.dataset.theme = b.dataset.t;
+  document.querySelectorAll('.swatch').forEach(s => s.classList.toggle('on', s === b));
+});
+
+/* ═ 模式1 · 开场编排：重播 + 滚进视野自动播一次 ═ */
+function play(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('play'); void el.offsetWidth; el.classList.add('play');
+}
+document.querySelectorAll('.replay').forEach(b => b.addEventListener('click', () => play(b.dataset.for)));
+if ('IntersectionObserver' in window) {
+  const io = new IntersectionObserver(ens => ens.forEach(en => {
+    if (en.isIntersecting) { play(en.target.id); io.unobserve(en.target); }
+  }), { threshold: 0.5 });
+  io.observe(document.getElementById('opening'));
+} else { play('opening'); }
+
+/* ═ 模式2 · 滚动飞入：容器内 IO，离开复位可反复看 ═ */
+const flyin = document.getElementById('flyin');
+if ('IntersectionObserver' in window) {
+  const io2 = new IntersectionObserver(ens => ens.forEach(en => en.target.classList.toggle('in', en.isIntersecting)), { root: flyin, threshold: 0.4 });
+  flyin.querySelectorAll('.flyin-tile').forEach(t => io2.observe(t));
+} else { flyin.querySelectorAll('.flyin-tile').forEach(t => t.classList.add('in')); }
+
+/* ═ 模式3 · 景深糖云：分层视差 ═ */
+const cloud = document.getElementById('cloud');
+cloud.addEventListener('pointermove', e => {
+  const r = cloud.getBoundingClientRect();
+  const dx = e.clientX - r.left - r.width / 2, dy = e.clientY - r.top - r.height / 2;
+  cloud.querySelectorAll('.cloud-layer').forEach(l => {
+    const f = Number(l.dataset.f);
+    l.style.transform = 'translate(' + (dx * f).toFixed(1) + 'px,' + (dy * f).toFixed(1) + 'px)';
+  });
+});
+cloud.addEventListener('pointerleave', () => {
+  cloud.querySelectorAll('.cloud-layer').forEach(l => { l.style.transform = ''; });
+});
+
+/* ═ 模式4 · 爆糖：糖尾（节流）+ 点击爆糖 ═ */
+const burst = document.getElementById('burst');
+const CANDY = ['var(--berry)', 'var(--peach)', 'var(--butter)', 'var(--mint)', 'var(--sky)', 'var(--taro)'];
+let lastDot = 0;
+burst.addEventListener('pointermove', e => {
+  const now = performance.now();
+  if (now - lastDot < 36) return;
+  lastDot = now;
+  const r = burst.getBoundingClientRect();
+  const d = document.createElement('span');
+  d.className = 'burst-dot';
+  d.style.left = (e.clientX - r.left - 5) + 'px';
+  d.style.top = (e.clientY - r.top - 5) + 'px';
+  d.style.setProperty('--s', (7 + Math.random() * 7).toFixed(0) + 'px');
+  d.style.setProperty('--mc', CANDY[Math.floor(Math.random() * CANDY.length)]);
+  d.style.setProperty('--rot', (Math.random() * 360).toFixed(0) + 'deg');
+  d.addEventListener('animationend', () => d.remove());
+  burst.appendChild(d);
+});
+burst.addEventListener('click', e => {
+  const r = burst.getBoundingClientRect();
+  for (let i = 0; i < 14; i++) {
+    const p = document.createElement('span');
+    p.className = 'burst-fly';
+    const ang = Math.random() * Math.PI * 2, dist = 44 + Math.random() * 78;
+    p.style.left = (e.clientX - r.left - 4) + 'px';
+    p.style.top = (e.clientY - r.top - 4) + 'px';
+    p.style.setProperty('--s', (6 + Math.random() * 8).toFixed(0) + 'px');
+    p.style.setProperty('--mc', CANDY[Math.floor(Math.random() * CANDY.length)]);
+    p.style.setProperty('--tx', (Math.cos(ang) * dist).toFixed(0) + 'px');
+    p.style.setProperty('--ty', (Math.sin(ang) * dist - 18).toFixed(0) + 'px');
+    p.addEventListener('animationend', () => p.remove());
+    burst.appendChild(p);
+  }
+});
+
+/* ═ 模式7 · 可戳果冻：弹性跟随 + 按压 + 花瓣 ═ */
+const poke = document.getElementById('poke');
+const pokeF = document.getElementById('pokeF');
+poke.addEventListener('pointermove', e => {
+  const r = poke.getBoundingClientRect();
+  const dx = e.clientX - r.left - r.width / 2, dy = e.clientY - r.top - r.height / 2;
+  pokeF.style.transform = 'translate(' + (dx * 0.14).toFixed(1) + 'px,' + (dy * 0.14).toFixed(1) + 'px)';
+});
+poke.addEventListener('pointerleave', () => { pokeF.style.transform = ''; });
+poke.addEventListener('pointerdown', e => {
+  poke.classList.add('squish');
+  const r = poke.getBoundingClientRect();
+  for (let i = 0; i < 2; i++) {
+    const p = document.createElement('span');
+    p.className = 'poke-pop';
+    const ang = -Math.PI / 2 + (Math.random() - 0.5) * 1.6, dist = 60 + Math.random() * 50;
+    p.style.left = (e.clientX - r.left - 8) + 'px';
+    p.style.top = (e.clientY - r.top - 8) + 'px';
+    p.style.setProperty('--s', (12 + Math.random() * 8).toFixed(0) + 'px');
+    p.style.setProperty('--tx', (Math.cos(ang) * dist).toFixed(0) + 'px');
+    p.style.setProperty('--ty', (Math.sin(ang) * dist).toFixed(0) + 'px');
+    p.addEventListener('animationend', () => p.remove());
+    poke.appendChild(p);
+  }
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => poke.addEventListener(ev, () => poke.classList.remove('squish')));
+
+/* ═ 模式8 · 日签卡：活日期 + 翻面 ═ */
+const daily = document.getElementById('daily');
+daily.addEventListener('click', () => daily.classList.toggle('flip'));
+const now = new Date();
+const MONTHS = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+const WEEKS = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+document.getElementById('dailyWeek').textContent = MONTHS[now.getMonth()] + ' · ' + WEEKS[now.getDay()];
+document.getElementById('dailyDate').textContent = (now.getMonth() + 1) + '月' + now.getDate() + '日';
+</script>
+</body>
+</html>

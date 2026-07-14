@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RuruOS 改版 Demo · 软糖手账 v6</title>
+<style>
+/* ============ 软糖手账 v6 · 概念稿 ============ */
+:root {
+  --berry: #ff8fab; --peach: #ffab76; --butter: #ffd66b;
+  --mint: #6fd8b4; --sky: #7db8f7; --taro: #b9a5f5;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --display: 'Yuanti SC', 'Hiragino Maru Gothic ProN', 'PingFang SC', sans-serif;
+  --sans: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+}
+/* —— 六套主题底 —— */
+body[data-theme="cream"] {
+  color-scheme: light;
+  --bg: #faf3ea; --bg2: #f3e6dd;
+  --card: rgba(255,255,255,0.78); --card-bd: rgba(216,180,150,0.35);
+  --ink: #4a3b33; --muted: #a5907f; --line: rgba(180,140,110,0.18);
+  --frost: rgba(255,255,255,0.62); --frost-bd: rgba(190,150,120,0.3);
+  --input: rgba(255,252,246,0.9); --sticker: #4a3427;
+  --shadow: 0 16px 40px rgba(160,120,80,0.16);
+  --note-bg: color-mix(in srgb, var(--butter) 9%, #fffdf8);
+  --note-bd: color-mix(in srgb, var(--butter) 45%, transparent);
+}
+body[data-theme="matcha"] {
+  color-scheme: light;
+  --bg: #eef4e4; --bg2: #e2ecd4;
+  --card: rgba(255,255,255,0.8); --card-bd: rgba(160,190,130,0.35);
+  --ink: #3e4a33; --muted: #8ba07a; --line: rgba(130,160,100,0.2);
+  --frost: rgba(255,255,255,0.62); --frost-bd: rgba(140,175,110,0.32);
+  --input: rgba(253,255,248,0.9); --sticker: #384a2c;
+  --shadow: 0 16px 40px rgba(110,140,80,0.15);
+  --note-bg: color-mix(in srgb, var(--butter) 9%, #fdfff6);
+  --note-bd: color-mix(in srgb, var(--mint) 40%, transparent);
+}
+body[data-theme="soda"] {
+  color-scheme: light;
+  --bg: #e9f3f8; --bg2: #dcebf4;
+  --card: rgba(255,255,255,0.8); --card-bd: rgba(130,175,205,0.35);
+  --ink: #35464e; --muted: #7d99a8; --line: rgba(100,150,180,0.2);
+  --frost: rgba(255,255,255,0.62); --frost-bd: rgba(110,160,195,0.32);
+  --input: rgba(250,253,255,0.9); --sticker: #2d434f;
+  --shadow: 0 16px 40px rgba(80,130,160,0.15);
+  --note-bg: color-mix(in srgb, var(--butter) 8%, #fbfdff);
+  --note-bd: color-mix(in srgb, var(--sky) 40%, transparent);
+}
+body[data-theme="peachtea"] {
+  color-scheme: light;
+  --bg: #fdeee4; --bg2: #f8e0d2;
+  --card: rgba(255,255,255,0.8); --card-bd: rgba(225,165,130,0.38);
+  --ink: #4e3a30; --muted: #b08c78; --line: rgba(200,140,105,0.2);
+  --frost: rgba(255,255,255,0.62); --frost-bd: rgba(210,150,115,0.32);
+  --input: rgba(255,251,247,0.9); --sticker: #4c3126;
+  --shadow: 0 16px 40px rgba(180,110,70,0.15);
+  --note-bg: color-mix(in srgb, var(--butter) 9%, #fffbf6);
+  --note-bd: color-mix(in srgb, var(--peach) 45%, transparent);
+}
+body[data-theme="berrynight"] {
+  color-scheme: dark;
+  --bg: #2f2358; --bg2: #241a49;
+  --card: rgba(255,255,255,0.11); --card-bd: rgba(255,190,220,0.26);
+  --ink: #f7eefa; --muted: #beb0d8; --line: rgba(255,190,220,0.18);
+  --frost: rgba(255,255,255,0.10); --frost-bd: rgba(255,255,255,0.18);
+  --input: rgba(12,8,24,0.45); --sticker: #43273a;
+  --shadow: 0 18px 44px rgba(8,4,18,0.5);
+  --note-bg: color-mix(in srgb, var(--butter) 13%, rgba(255,255,255,0.10));
+  --note-bd: color-mix(in srgb, var(--butter) 38%, transparent);
+}
+body[data-theme="grapenight"] {
+  color-scheme: dark;
+  --bg: #251c3e; --bg2: #1b1430;
+  --card: rgba(255,255,255,0.10); --card-bd: rgba(200,180,255,0.24);
+  --ink: #f2edfa; --muted: #a99cc9; --line: rgba(200,180,255,0.17);
+  --frost: rgba(255,255,255,0.10); --frost-bd: rgba(255,255,255,0.17);
+  --input: rgba(10,7,20,0.45); --sticker: #3a2a4e;
+  --shadow: 0 18px 44px rgba(5,3,14,0.55);
+  --note-bg: color-mix(in srgb, var(--butter) 12%, rgba(255,255,255,0.09));
+  --note-bd: color-mix(in srgb, var(--butter) 35%, transparent);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: linear-gradient(176deg, var(--bg) 0%, var(--bg2) 100%) fixed;
+  color: var(--ink); font-family: var(--sans);
+  font-size: 16px; line-height: 1.7;
+  transition: background 0.5s ease, color 0.5s ease;
+  padding-bottom: 80px;
+}
+button { font-family: var(--sans); cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2.5px solid var(--sky); outline-offset: 2px; }
+
+/* ============ 桌面动效层 ============ */
+.fx { position: fixed; inset: 0; pointer-events: none; z-index: 999; overflow: hidden; }
+.fx i { position: absolute; display: block; top: -8vh; left: var(--x); animation: fxfall var(--d) linear var(--dl) infinite; }
+.fx i > b { display: block; animation: fxsway calc(var(--d) / 3.2) ease-in-out var(--dl) infinite alternate; }
+/* --dx = 整程横向漂移量，由方向角算出：dx = tan(角度) × 全程高度 */
+@keyframes fxfall { to { transform: translate(var(--dx, 0px), 118vh); } }
+@keyframes fxsway { from { transform: translateX(calc(var(--sw) * -1)) rotate(0deg); } to { transform: translateX(var(--sw)) rotate(200deg); } }
+.fx .petal > b {
+  width: var(--s); height: calc(var(--s) * 0.86);
+  background: linear-gradient(135deg, #ffc7d6, var(--berry) 70%);
+  border-radius: 68% 6% 68% 6%; opacity: 0.85;
+}
+.fx .rain { animation-timing-function: linear; }
+.fx .rain > b {
+  width: 1.5px; height: 22px; animation: none;
+  background: linear-gradient(180deg, transparent, var(--sky)); opacity: 0.55;
+  transform: rotate(var(--tilt, 9deg)); /* 雨丝顺着运动方向倾斜 */
+}
+.fx .snow > b {
+  width: var(--s); height: var(--s); border-radius: 50%;
+  background: #fff; filter: blur(0.6px); opacity: 0.8;
+  box-shadow: 0 0 6px rgba(255,255,255,0.6);
+}
+.fx .fly { top: auto; bottom: -4vh; animation-name: fxrise; }
+@keyframes fxrise { to { transform: translate(var(--dx, 0px), -118vh); } }
+.fx .fly > b {
+  width: var(--s); height: var(--s); border-radius: 50%;
+  background: var(--butter); box-shadow: 0 0 12px 3px rgba(255,214,107,0.55);
+  animation: fxsway calc(var(--d)/3) ease-in-out infinite alternate, fxflick 2.4s ease-in-out var(--dl) infinite alternate;
+}
+@keyframes fxflick { from { opacity: 0.15; } to { opacity: 0.9; } }
+@media (prefers-reduced-motion: reduce) {
+  .fx { display: none; }
+  * { animation-duration: 0.01s !important; transition-duration: 0.01s !important; }
+}
+
+/* ============ Demo 控制条 ============ */
+.bar {
+  position: sticky; top: 0; z-index: 1000;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px;
+  padding: 12px clamp(16px, 4vw, 44px);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1.5px dashed var(--line);
+}
+.bar-title { font-family: var(--display); font-weight: 800; font-size: 1.02em; letter-spacing: 0.02em; }
+.bar-title small { display: block; font-size: 0.68em; font-weight: 700; color: var(--muted); letter-spacing: 0.14em; }
+.bar-group { display: flex; align-items: center; gap: 7px; }
+.bar-label { font-size: 0.72em; font-weight: 800; letter-spacing: 0.12em; color: var(--muted); }
+.swatch {
+  width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid transparent;
+  padding: 0; background: var(--sw); box-shadow: inset 0 0 0 2px rgba(255,255,255,0.55);
+  transition: transform 0.25s var(--spring);
+}
+.swatch:hover { transform: scale(1.15); }
+.swatch.on { border-color: var(--ink); transform: scale(1.12); }
+.hue { display: flex; align-items: center; gap: 6px; }
+.hue input { width: 110px; accent-color: var(--berry); }
+.fx-pick {
+  border: 1.5px solid var(--frost-bd); background: var(--frost);
+  color: var(--ink); border-radius: 999px; padding: 5px 13px;
+  font-size: 0.8em; font-weight: 800; transition: all 0.25s var(--spring);
+}
+.fx-pick:hover { transform: translateY(-1px); }
+.fx-pick.on { background: var(--berry); border-color: transparent; color: var(--sticker); box-shadow: 0 3px 10px color-mix(in srgb, var(--berry) 50%, transparent); }
+
+/* ============ 幕布局 ============ */
+.stage { max-width: 1240px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 44px); }
+.act { margin-top: 64px; }
+.act-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--display); font-weight: 800; font-size: 1.06em;
+  background: var(--card); border: 1.5px solid var(--card-bd);
+  border-radius: 14px 14px 14px 4px; padding: 8px 18px;
+  box-shadow: var(--shadow); transform: rotate(-1deg);
+  margin-bottom: 6px;
+}
+.act-tag em { font-style: normal; font-size: 0.72em; font-weight: 800; color: var(--sticker); background: var(--tag, var(--butter)); border-radius: 7px; padding: 2px 9px; }
+.act-note { color: var(--muted); font-size: 0.86em; margin: 6px 4px 16px; }
+.canvas {
+  background: var(--card); border: 1.5px solid var(--card-bd);
+  border-radius: 26px; box-shadow: var(--shadow);
+  padding: clamp(18px, 3vw, 32px);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+}
+.dev-note { margin: 14px 4px 0; font-size: 0.8em; color: var(--muted); line-height: 1.8; }
+.dev-note b { color: var(--ink); font-weight: 700; }
+
+/* ============ 通用新按钮体系「糖霜 & 果冻」 ============ */
+.pill {
+  border: 1.5px solid var(--frost-bd); background: var(--frost);
+  color: var(--ink); border-radius: 999px; padding: 7px 16px;
+  font-size: 0.84em; font-weight: 800;
+  transition: transform 0.2s var(--spring), background 0.2s ease, box-shadow 0.2s ease;
+}
+.pill:hover { background: color-mix(in srgb, var(--frost) 60%, rgba(255,255,255,0.5)); transform: translateY(-1.5px); }
+.pill:active { transform: translateY(1px) scale(0.97); }
+.pill.on {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pc, var(--peach)) 82%, #fff), var(--pc, var(--peach)));
+  border-color: transparent; color: var(--sticker);
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--pc, var(--peach)) 55%, #7a4a20), 0 6px 14px color-mix(in srgb, var(--pc, var(--peach)) 42%, transparent);
+  transform: translateY(-1.5px);
+}
+.pill .n {
+  display: inline-block; min-width: 18px; text-align: center;
+  background: rgba(255,255,255,0.4); border-radius: 8px; padding: 0 5px;
+  font-size: 0.88em; margin-left: 4px; font-variant-numeric: tabular-nums;
+}
+.pill.on .n { background: rgba(255,255,255,0.55); }
+body[data-theme*="night"] .pill .n { background: rgba(255,255,255,0.14); }
+body[data-theme*="night"] .pill.on .n { background: rgba(255,255,255,0.5); }
+.jelly {
+  border: none; border-radius: 15px; padding: 11px 22px;
+  font-family: var(--display); font-weight: 800; font-size: 0.94em;
+  color: var(--sticker);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--jc, var(--taro)) 86%, #fff), var(--jc, var(--taro)));
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--jc, var(--taro)) 58%, #6a4a30), 0 8px 18px color-mix(in srgb, var(--jc, var(--taro)) 38%, transparent);
+  transition: transform 0.16s var(--spring), box-shadow 0.16s ease;
+}
+.jelly:hover { transform: translateY(-2px); }
+.jelly:active { transform: translateY(3px) scale(0.97); box-shadow: 0 1px 0 color-mix(in srgb, var(--jc, var(--taro)) 58%, #6a4a30); }
+.jelly:disabled { filter: saturate(0.25) opacity(0.55); transform: none; box-shadow: none; cursor: not-allowed; }
+.jc-berry { --jc: var(--berry); } .jc-peach { --jc: var(--peach); } .jc-butter { --jc: var(--butter); }
+.jc-mint { --jc: var(--mint); } .jc-sky { --jc: var(--sky); } .jc-taro { --jc: var(--taro); }
+.icon-round {
+  width: 38px; height: 38px; border-radius: 50%; border: 1.5px solid var(--frost-bd);
+  background: var(--frost); color: var(--ink); font-size: 1em; font-weight: 800;
+  display: inline-grid; place-items: center;
+  transition: transform 0.2s var(--spring), background 0.2s ease;
+}
+.icon-round:hover { transform: scale(1.1) rotate(-4deg); background: color-mix(in srgb, var(--frost) 55%, rgba(255,255,255,0.5)); }
+
+/* ============ ① 新顶栏 · 日签卡 ============ */
+.hero-wrap { overflow-x: auto; }
+.hero {
+  min-width: 900px;
+  background: var(--card); border: 1.5px solid var(--card-bd);
+  border-radius: 24px; box-shadow: var(--shadow);
+  padding: 20px 26px 22px;
+}
+.hero-top { display: flex; align-items: center; gap: 20px; }
+.hero-mark { flex: none; width: 46px; height: 46px; filter: drop-shadow(0 5px 12px color-mix(in srgb, var(--berry) 35%, transparent)); }
+.hero-greet { min-width: 0; }
+.hero-hi { font-family: var(--display); font-weight: 800; font-size: 1.5em; line-height: 1.25; letter-spacing: 0.01em; }
+.hero-hi .flower { color: var(--berry); animation: spinflower 7s linear infinite; display: inline-block; }
+@keyframes spinflower { to { transform: rotate(360deg); } }
+.hero-quote { margin-top: 3px; color: var(--muted); font-size: 0.9em; display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.hero-quote q { quotes: "「" "」"; color: color-mix(in srgb, var(--ink) 76%, var(--muted)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 34em; transition: opacity 0.45s ease; }
+.hero-quote .src { flex: none; font-size: 0.86em; }
+.q-next {
+  flex: none; border: none; background: none; color: var(--muted); padding: 0 3px;
+  font-size: 0.92em; transition: transform 0.3s var(--spring), color 0.2s;
+}
+.q-next:hover { color: var(--berry); transform: rotate(180deg); }
+.hero-space { flex: 1; }
+.wx-mini {
+  flex: none; display: flex; align-items: center; gap: 9px;
+  border: 1.5px solid var(--frost-bd); background: var(--frost);
+  border-radius: 999px; padding: 6px 14px 6px 8px;
+}
+.wx-mini .wx-ic { width: 26px; height: 26px; }
+.wx-mini b { font-family: var(--display); font-size: 1.05em; font-variant-numeric: tabular-nums; }
+.wx-mini span { font-size: 0.74em; color: var(--muted); font-weight: 700; }
+.datestamp { flex: none; display: flex; align-items: center; gap: 14px; }
+.ds-time { font-family: var(--display); font-weight: 800; font-size: 2.5em; letter-spacing: 0.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+.ds-time .colon { animation: colonblink 2s steps(2) infinite; }
+@keyframes colonblink { 50% { opacity: 0.25; } }
+.ds-chip { border-left: 2px dashed var(--line); padding-left: 14px; }
+.ds-date { font-family: var(--display); font-weight: 800; font-size: 0.98em; }
+.ds-part {
+  display: inline-block; margin-top: 3px; font-size: 0.7em; font-weight: 800;
+  color: var(--sticker); background: var(--taro); border-radius: 7px; padding: 2px 9px;
+}
+.hero-ctrl { flex: none; display: flex; gap: 8px; }
+.hero-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 18px; }
+.stat-tile {
+  position: relative; overflow: hidden; text-align: left;
+  border: 1.5px solid var(--frost-bd); background: var(--frost);
+  border-radius: 18px; padding: 14px 18px 12px; color: var(--ink);
+  transition: transform 0.25s var(--spring), box-shadow 0.25s ease;
+}
+.stat-tile::before {
+  content: ''; position: absolute; inset: 0 0 auto 0; height: 44px;
+  background: radial-gradient(120px 44px at 22% 0%, color-mix(in srgb, var(--sc) 38%, transparent), transparent 75%);
+  pointer-events: none;
+}
+.stat-tile:hover { transform: translateY(-4px) rotate(-0.4deg); box-shadow: 0 14px 28px color-mix(in srgb, var(--sc) 24%, transparent); }
+.stat-head { display: flex; align-items: center; gap: 7px; font-size: 0.8em; font-weight: 800; color: var(--muted); }
+.stat-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--sc); box-shadow: 0 0 8px color-mix(in srgb, var(--sc) 60%, transparent); }
+.stat-num { font-family: var(--display); font-weight: 800; font-size: 2.6em; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.stat-sub { font-size: 0.76em; color: var(--muted); }
+.stat-go { position: absolute; right: 14px; bottom: 12px; font-weight: 800; color: var(--muted); opacity: 0; transition: all 0.25s var(--spring); }
+.stat-tile:hover .stat-go { opacity: 1; transform: translateX(3px); color: var(--ink); }
+
+/* ============ ② 天气糖罩 ============ */
+.wx-row { display: flex; flex-wrap: wrap; gap: 24px; align-items: stretch; }
+.wx-card {
+  flex: 1 1 380px; max-width: 520px;
+  border: 1.5px solid var(--frost-bd); background: var(--frost);
+  border-radius: 22px; padding: 20px 24px; display: flex; gap: 22px; align-items: center;
+}
+.dome { position: relative; flex: none; width: 150px; height: 128px; }
+.dome-glass {
+  position: absolute; inset: 0 5px 14px;
+  border-radius: 70px 70px 58px 58px / 92px 92px 40px 40px;
+  background: linear-gradient(165deg, rgba(255,255,255,0.34), rgba(255,255,255,0.06) 55%);
+  border: 1.5px solid rgba(255,255,255,0.45);
+  overflow: hidden; backdrop-filter: blur(2px);
+}
+body[data-theme*="night"] .dome-glass { background: linear-gradient(165deg, rgba(255,255,255,0.2), rgba(255,255,255,0.03) 55%); border-color: rgba(255,255,255,0.3); }
+.dome-base {
+  position: absolute; left: 8px; right: 8px; bottom: 4px; height: 16px;
+  border-radius: 10px; background: linear-gradient(180deg, color-mix(in srgb, var(--butter) 75%, #fff), color-mix(in srgb, var(--peach) 80%, #b9741f));
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--peach) 40%, transparent);
+}
+.dome-shine { position: absolute; top: 12px; left: 22px; width: 22px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.5); filter: blur(4px); transform: rotate(18deg); }
+.wsun { position: absolute; top: 26px; left: 50%; margin-left: -22px; width: 44px; height: 44px; border-radius: 50%;
+  background: radial-gradient(circle at 36% 34%, #ffe9a8, var(--butter) 65%);
+  box-shadow: 0 0 26px 8px rgba(255,214,107,0.55); animation: breathe 4s ease-in-out infinite; }
+@keyframes breathe { 50% { transform: scale(1.08); } }
+.wray { position: absolute; top: 20px; left: 50%; width: 56px; height: 56px; margin-left: -28px; animation: rayspin 16s linear infinite; }
+.wray::before { content: ''; position: absolute; inset: 0; border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255,214,107,0.7) 0 5deg, transparent 5deg 30deg);
+  -webkit-mask: radial-gradient(circle, transparent 58%, #000 60%, #000 72%, transparent 74%);
+  mask: radial-gradient(circle, transparent 58%, #000 60%, #000 72%, transparent 74%); }
+@keyframes rayspin { to { transform: rotate(360deg); } }
+.wcloud { position: absolute; width: 58px; height: 20px; border-radius: 999px; background: #fff; opacity: 0.95;
+  box-shadow: 0 3px 8px rgba(120,120,160,0.2); animation: drift 7s ease-in-out infinite alternate; }
+.wcloud::before { content: ''; position: absolute; top: -10px; left: 12px; width: 22px; height: 22px; border-radius: 50%; background: inherit; }
+.wcloud::after { content: ''; position: absolute; top: -7px; right: 10px; width: 16px; height: 16px; border-radius: 50%; background: inherit; }
+.wc1 { top: 42px; left: 18px; } .wc2 { top: 64px; right: 14px; transform: scale(0.72); animation-delay: -3s; }
+body[data-theme*="night"] .wcloud { background: #cfc6e8; }
+@keyframes drift { from { translate: -7px 0; } to { translate: 7px 0; } }
+.wdrop { position: absolute; width: 2px; height: 12px; border-radius: 2px; background: var(--sky); opacity: 0.75;
+  animation: dropfall 1.1s linear var(--dl, 0s) infinite; top: 52px; left: var(--x); }
+@keyframes dropfall { from { transform: translateY(0); opacity: 0.85; } to { transform: translateY(52px); opacity: 0; } }
+.wflake { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #fff; filter: blur(0.4px);
+  animation: flakefall 3.2s linear var(--dl, 0s) infinite; top: 46px; left: var(--x); }
+@keyframes flakefall { from { transform: translateY(0) translateX(0); opacity: 0.95; }
+  60% { transform: translateY(34px) translateX(5px); } to { transform: translateY(58px) translateX(-3px); opacity: 0; } }
+.wx-card[data-w="sun"] .wcloud, .wx-card[data-w="sun"] .wdrop, .wx-card[data-w="sun"] .wflake { display: none; }
+.wx-card[data-w="cloud"] .wsun { top: 20px; margin-left: -34px; transform: scale(0.8); }
+.wx-card[data-w="cloud"] .wray, .wx-card[data-w="cloud"] .wdrop, .wx-card[data-w="cloud"] .wflake { display: none; }
+.wx-card[data-w="rain"] .wsun, .wx-card[data-w="rain"] .wray, .wx-card[data-w="rain"] .wflake { display: none; }
+.wx-card[data-w="snow"] .wsun, .wx-card[data-w="snow"] .wray, .wx-card[data-w="snow"] .wdrop { display: none; }
+.wx-info { min-width: 0; flex: 1; }
+.wx-temp { font-family: var(--display); font-weight: 800; font-size: 3em; line-height: 1; font-variant-numeric: tabular-nums; }
+.wx-temp small { font-size: 0.42em; font-weight: 800; color: var(--muted); margin-left: 2px; }
+.wx-desc { font-weight: 800; margin-top: 2px; }
+.wx-loc { color: var(--muted); font-size: 0.8em; margin-top: 2px; }
+.wx-hours { display: flex; gap: 6px; margin-top: 12px; }
+.wx-h { flex: 1; text-align: center; border-radius: 12px; padding: 7px 2px 6px; background: color-mix(in srgb, var(--frost) 55%, transparent); border: 1px solid var(--line); }
+.wx-h b { display: block; font-size: 0.82em; font-variant-numeric: tabular-nums; }
+.wx-h span { font-size: 0.66em; color: var(--muted); font-weight: 700; }
+.wx-side { flex: 1 1 260px; display: flex; flex-direction: column; gap: 14px; justify-content: center; }
+.wx-states { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ============ ③ 按钮体系 ============ */
+.btn-compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+.btn-panel { border-radius: 18px; padding: 18px 20px; }
+.btn-panel h4 { margin: 0 0 12px; font-family: var(--display); font-size: 0.92em; display: flex; align-items: center; gap: 8px; }
+.badge-bad { font-size: 0.7em; font-weight: 800; color: #fff; background: #d9536f; border-radius: 7px; padding: 2px 9px; }
+.badge-good { font-size: 0.7em; font-weight: 800; color: var(--sticker); background: var(--mint); border-radius: 7px; padding: 2px 9px; }
+.panel-dark { background: #241a49; border: 1.5px solid rgba(255,190,220,0.22); color: #f7eefa; }
+.old-pill { border: none; border-radius: 999px; padding: 7px 16px; font-size: 0.84em; font-weight: 800; background: #1a1233; color: #cbc2e0; }
+.old-pill.sel { background: var(--peach); color: #4a3427; }
+.kit-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0; }
+.kit-label { flex: 0 0 88px; font-size: 0.74em; font-weight: 800; letter-spacing: 0.1em; color: var(--muted); }
+.pseudo-hover { background: color-mix(in srgb, var(--frost) 60%, rgba(255,255,255,0.5)); transform: translateY(-1.5px); }
+.pseudo-active { transform: translateY(1px) scale(0.97); }
+
+/* ============ ④ 图标三案 ============ */
+.logo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.logo-card { border: 1.5px solid var(--frost-bd); background: var(--frost); border-radius: 20px; padding: 20px; }
+.logo-hero { display: flex; align-items: center; gap: 16px; }
+.logo-hero svg { filter: drop-shadow(0 8px 18px color-mix(in srgb, var(--berry) 30%, transparent)); }
+.logo-name { font-family: var(--display); font-weight: 800; font-size: 1.05em; }
+.logo-why { font-size: 0.8em; color: var(--muted); line-height: 1.7; margin-top: 2px; }
+.logo-sizes { display: flex; align-items: flex-end; gap: 14px; margin-top: 16px; }
+.logo-sizes figure { margin: 0; text-align: center; }
+.logo-sizes figcaption { font-size: 0.64em; color: var(--muted); font-weight: 700; margin-top: 4px; }
+.logo-ctx { display: flex; gap: 10px; margin-top: 14px; }
+.ctx-chip { flex: 1; display: flex; align-items: center; gap: 8px; border-radius: 12px; padding: 8px 12px; font-size: 0.76em; font-weight: 800; }
+.ctx-light { background: #faf3ea; color: #4a3b33; border: 1px solid rgba(180,140,110,0.3); }
+.ctx-dark { background: #2f2358; color: #f7eefa; border: 1px solid rgba(255,190,220,0.25); }
+.pick-logo { margin-top: 14px; width: 100%; }
+.pick-logo.picked { --jc: var(--mint); }
+
+/* ============ ⑤ 阅读器 ============ */
+.reader-mock { border: 1.5px solid var(--frost-bd); background: var(--frost); border-radius: 20px; overflow: hidden; }
+.reader-bar-mock { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; padding: 13px 18px; border-bottom: 1.5px dashed var(--line); }
+.width-seg { display: flex; gap: 4px; border: 1.5px solid var(--frost-bd); background: var(--frost); border-radius: 999px; padding: 3px; }
+.width-seg button { border: none; background: transparent; color: var(--muted); border-radius: 999px; padding: 4px 13px; font-size: 0.78em; font-weight: 800; transition: all 0.25s var(--spring); }
+.width-seg button.on { background: var(--sky); color: var(--sticker); box-shadow: 0 2px 8px color-mix(in srgb, var(--sky) 45%, transparent); }
+.reader-page-mock { margin: 0 auto; padding: 26px clamp(16px, 4vw, 40px) 34px; max-width: var(--pw, 1000px); transition: max-width 0.45s var(--ease); }
+.rp-title { font-family: var(--display); font-weight: 800; font-size: 1.5em; margin: 0 0 4px; }
+.rp-meta { color: var(--muted); font-size: 0.8em; padding-bottom: 14px; border-bottom: 2px dashed var(--line); margin-bottom: 16px; }
+.rp-body p { margin: 0.9em 0; font-size: 1.02em; line-height: 1.95; }
+.rp-body h3 { font-family: var(--display); font-size: 1.08em; margin: 1.4em 0 0.5em; padding-left: 12px; border-left: 5px solid var(--peach); color: color-mix(in srgb, var(--peach) 60%, var(--ink)); border-radius: 3px; }
+.note-v6 {
+  margin: 16px 0 6px; padding: 12px 16px 10px;
+  background: var(--note-bg); border: 1.5px dashed var(--note-bd);
+  border-radius: 16px; transform: rotate(-0.3deg);
+}
+.note-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.note-kick { font-family: var(--display); font-weight: 800; font-size: 0.8em; letter-spacing: 0.06em; }
+.note-hint { font-size: 0.7em; color: var(--muted); }
+.note-sp { flex: 1; }
+.note-del {
+  border: 1.5px solid var(--note-bd); background: transparent; color: var(--muted);
+  border-radius: 999px; padding: 3px 12px; font-size: 0.72em; font-weight: 800;
+  transition: all 0.2s ease;
+}
+.note-del:hover { color: var(--ink); border-color: var(--berry); }
+.note-del.confirm { background: var(--berry); border-color: transparent; color: var(--sticker); animation: wiggle 0.4s var(--spring); }
+@keyframes wiggle { 25% { transform: rotate(-2.5deg); } 75% { transform: rotate(2.5deg); } }
+.note-ta { width: 100%; border: none; background: transparent; resize: vertical; font-family: var(--sans); font-size: 0.94em; line-height: 1.8; color: var(--ink); min-height: 48px; }
+.note-ta:focus { outline: none; }
+
+/* ============ ⑥ 废弃箱 ============ */
+.art-mock { border: 1.5px solid var(--frost-bd); background: var(--frost); border-radius: 20px; padding: 18px 20px; }
+.art-head { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-bottom: 14px; }
+.art-title { font-family: var(--display); font-weight: 800; margin-right: 8px; }
+.art-list { display: flex; flex-direction: column; }
+.art-row { display: flex; align-items: center; gap: 12px; padding: 11px 8px; border-bottom: 1.5px dashed var(--line); transition: opacity 0.4s ease, transform 0.4s ease; }
+.art-row:last-child { border-bottom: none; }
+.art-cat { flex: none; font-size: 0.68em; font-weight: 800; color: var(--sticker); background: var(--cc, var(--taro)); border-radius: 7px; padding: 2px 8px; }
+.art-name { min-width: 0; flex: 1; font-weight: 700; font-size: 0.94em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trash-row .art-name { color: var(--muted); font-weight: 600; }
+.art-date { flex: none; color: var(--muted); font-size: 0.76em; font-variant-numeric: tabular-nums; }
+.row-btn { flex: none; border: 1.5px solid var(--frost-bd); background: var(--frost); color: var(--ink); border-radius: 999px; padding: 4px 13px; font-size: 0.74em; font-weight: 800; transition: all 0.2s var(--spring); }
+.row-btn:hover { transform: translateY(-1px); }
+.row-btn.mint:hover { background: var(--mint); color: var(--sticker); border-color: transparent; }
+.row-btn.danger:hover { background: var(--berry); color: var(--sticker); border-color: transparent; }
+.row-btn.confirm { background: var(--berry); color: var(--sticker); border-color: transparent; animation: wiggle 0.4s var(--spring); }
+.gone { opacity: 0; transform: translateX(30px) scale(0.96); pointer-events: none; }
+.trash-tip { margin-top: 12px; font-size: 0.78em; color: var(--muted); border-top: 1.5px dashed var(--line); padding-top: 10px; }
+
+/* ============ 页脚确认清单 ============ */
+.confirm-list { margin-top: 70px; }
+.confirm-card { border-left: 5px solid var(--butter); border-radius: 6px 20px 20px 6px; }
+.confirm-card ol { margin: 8px 0 0; padding-left: 22px; }
+.confirm-card li { margin: 7px 0; font-size: 0.94em; }
+.confirm-card li b { color: color-mix(in srgb, var(--peach) 55%, var(--ink)); }
+
+@media (max-width: 860px) {
+  .hero { min-width: 780px; }
+  .hero-stats { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body data-theme="cream">
+
+<div class="fx" id="fx" aria-hidden="true"></div>
+
+<header class="bar">
+  <div class="bar-title">RuruOS 改版 Demo<small>软糖手账 v6 · 概念稿</small></div>
+  <div class="bar-group" id="themePick">
+    <span class="bar-label">主题</span>
+    <button class="swatch on" data-t="cream" style="--sw:#faf3ea" aria-label="奶油白天" title="奶油白天"></button>
+    <button class="swatch" data-t="matcha" style="--sw:#e4eed2" aria-label="抹茶拿铁" title="抹茶拿铁"></button>
+    <button class="swatch" data-t="soda" style="--sw:#d9ecf6" aria-label="海盐汽水" title="海盐汽水"></button>
+    <button class="swatch" data-t="peachtea" style="--sw:#fbe3d2" aria-label="蜜桃乌龙" title="蜜桃乌龙"></button>
+    <button class="swatch" data-t="berrynight" style="--sw:#2f2358" aria-label="莓果夜晚" title="莓果夜晚"></button>
+    <button class="swatch" data-t="grapenight" style="--sw:#1e1633" aria-label="葡萄夜巡" title="葡萄夜巡"></button>
+    <span class="hue"><span class="bar-label">自调</span><input type="range" id="hueSlider" min="0" max="360" value="35" aria-label="自定义底色色相"></span>
+  </div>
+  <div class="bar-group" id="fxPick">
+    <span class="bar-label">桌面动效</span>
+    <button class="fx-pick" data-fx="none">无</button>
+    <button class="fx-pick on" data-fx="sakura">樱花</button>
+    <button class="fx-pick" data-fx="rain">细雨</button>
+    <button class="fx-pick" data-fx="snow">落雪</button>
+    <button class="fx-pick" data-fx="fly">萤火</button>
+  </div>
+  <div class="bar-group" id="fxTune">
+    <span class="hue"><span class="bar-label">速度</span><input type="range" id="fxSpeed" min="50" max="220" value="100" aria-label="动效下落速度"></span>
+    <span class="hue"><span class="bar-label">数量</span><input type="range" id="fxCount" min="30" max="220" value="100" aria-label="动效元素数量"></span>
+    <span class="hue"><span class="bar-label">大小</span><input type="range" id="fxSize" min="60" max="170" value="100" aria-label="动效元素大小"></span>
+    <span class="hue"><span class="bar-label">方向</span><input type="range" id="fxAngle" min="-45" max="45" value="10" aria-label="下落方向角度，负值向左斜，正值向右斜"></span>
+  </div>
+</header>
+
+<main class="stage">
+
+  <!-- ① 新顶栏 -->
+  <section class="act" id="s1">
+    <div class="act-tag" style="--tag:var(--berry)"><em>①</em>新顶栏 · 日签卡</div>
+    <p class="act-note">左边是问候和每 5 分钟换一句的「句子精选」，右边日期时间合成一张日签；中间空区交给放大的四个统计块，一块一色，点击直达对应卡片。</p>
+    <div class="hero-wrap">
+    <div class="hero">
+      <div class="hero-top">
+        <svg class="hero-mark" viewBox="0 0 48 48" id="heroMark"></svg>
+        <div class="hero-greet">
+          <div class="hero-hi" id="greetLine">夜深了，Lulu <span class="flower">✿</span></div>
+          <div class="hero-quote">
+            <q id="quoteText">一定要爱着点什么，恰似草木对光阴的钟情。</q>
+            <span class="src" id="quoteSrc">—— 汪曾祺</span>
+            <button class="q-next" id="quoteNext" title="换一句" aria-label="换一句">↻</button>
+          </div>
+        </div>
+        <div class="hero-space"></div>
+        <div class="wx-mini">
+          <svg class="wx-ic" viewBox="0 0 30 30"><circle cx="15" cy="15" r="7" fill="#ffd66b"/><g stroke="#ffd66b" stroke-width="2.2" stroke-linecap="round"><line x1="15" y1="2" x2="15" y2="5.5"/><line x1="15" y1="24.5" x2="15" y2="28"/><line x1="2" y1="15" x2="5.5" y2="15"/><line x1="24.5" y1="15" x2="28" y2="15"/><line x1="5.8" y1="5.8" x2="8.3" y2="8.3"/><line x1="21.7" y1="21.7" x2="24.2" y2="24.2"/><line x1="5.8" y1="24.2" x2="8.3" y2="21.7"/><line x1="21.7" y1="8.3" x2="24.2" y2="5.8"/></g></svg>
+          <div><b>26°</b> <span>东京 · 晴</span></div>
+        </div>
+        <div class="datestamp">
+          <div class="ds-time" id="clock">04<span class="colon">:</span>12</div>
+          <div class="ds-chip">
+            <div class="ds-date" id="dateLine">7月11日 · 周六</div>
+            <span class="ds-part" id="dayPart">深夜巡航</span>
+          </div>
+        </div>
+        <div class="hero-ctrl">
+          <button class="icon-round" title="同步" aria-label="同步">⇅</button>
+          <button class="icon-round" title="桌面动效" aria-label="桌面动效">❀</button>
+          <button class="icon-round" title="主题" aria-label="主题">◐</button>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <button class="stat-tile" style="--sc:var(--mint)">
+          <span class="stat-head"><span class="stat-dot"></span>待办</span>
+          <div class="stat-num">0</div>
+          <div class="stat-sub">全部清空啦</div>
+          <span class="stat-go">›</span>
+        </button>
+        <button class="stat-tile" style="--sc:var(--berry)">
+          <span class="stat-head"><span class="stat-dot"></span>未读</span>
+          <div class="stat-num">12</div>
+          <div class="stat-sub">最新 · 配色灵感 9 组</div>
+          <span class="stat-go">›</span>
+        </button>
+        <button class="stat-tile" style="--sc:var(--butter)">
+          <span class="stat-head"><span class="stat-dot"></span>待归类</span>
+          <div class="stat-num">1</div>
+          <div class="stat-sub">金特务：本色回归</div>
+          <span class="stat-go">›</span>
+        </button>
+        <button class="stat-tile" style="--sc:var(--sky)">
+          <span class="stat-head"><span class="stat-dot"></span>在追</span>
+          <div class="stat-num">0</div>
+          <div class="stat-sub">去追剧墙挑一部嘛</div>
+          <span class="stat-go">›</span>
+        </button>
+      </div>
+    </div>
+    </div>
+    <p class="dev-note"><b>开发注记</b>：句库放 <b>90-System/句子精选.md</b>（几百句由我们代填，你也可以随手加），正式版每 5 分钟自动换一句，点 ↻ 手动换；时钟每秒走，冒号呼吸闪烁；统计块数字接现有 metadataCache 实时数据；顶栏图标按钮只留三颗（同步 / 动效 / 主题），字号胶囊挪进主题面板里，顶栏减负。</p>
+  </section>
+
+  <!-- ② 天气糖罩 -->
+  <section class="act" id="s2">
+    <div class="act-tag" style="--tag:var(--sky)"><em>②</em>天气 · 玻璃糖罩小剧场</div>
+    <p class="act-note">天气单独成模块：一颗玻璃糖罩里演天气，罩子下面是奶油糖底座。点右边的状态试试，每种天气有自己的小动画。</p>
+    <div class="canvas">
+      <div class="wx-row">
+        <div class="wx-card" data-w="sun" id="wxCard">
+          <div class="dome">
+            <div class="dome-glass">
+              <div class="wray"></div>
+              <div class="wsun"></div>
+              <div class="wcloud wc1"></div>
+              <div class="wcloud wc2"></div>
+              <span class="wdrop" style="--x:28px; --dl:0s"></span>
+              <span class="wdrop" style="--x:52px; --dl:0.35s"></span>
+              <span class="wdrop" style="--x:76px; --dl:0.7s"></span>
+              <span class="wdrop" style="--x:100px; --dl:0.18s"></span>
+              <span class="wdrop" style="--x:118px; --dl:0.55s"></span>
+              <span class="wflake" style="--x:30px; --dl:0s"></span>
+              <span class="wflake" style="--x:58px; --dl:1.1s"></span>
+              <span class="wflake" style="--x:84px; --dl:0.5s"></span>
+              <span class="wflake" style="--x:108px; --dl:1.6s"></span>
+              <div class="dome-shine"></div>
+            </div>
+            <div class="dome-base"></div>
+          </div>
+          <div class="wx-info">
+            <div class="wx-temp" id="wxTemp">26<small>°C</small></div>
+            <div class="wx-desc" id="wxDesc">晴 · 微风拂过</div>
+            <div class="wx-loc">东京 · 丰岛区　体感 27° · 湿度 58%</div>
+            <div class="wx-hours">
+              <div class="wx-h"><span>现在</span><b>26°</b></div>
+              <div class="wx-h"><span>08时</span><b>27°</b></div>
+              <div class="wx-h"><span>11时</span><b>29°</b></div>
+              <div class="wx-h"><span>14时</span><b>31°</b></div>
+              <div class="wx-h"><span>17时</span><b>29°</b></div>
+              <div class="wx-h"><span>20时</span><b>27°</b></div>
+            </div>
+          </div>
+        </div>
+        <div class="wx-side">
+          <div class="wx-states" id="wxStates">
+            <button class="pill on" data-w="sun" style="--pc:var(--butter)">晴</button>
+            <button class="pill" data-w="cloud" style="--pc:var(--taro)">多云</button>
+            <button class="pill" data-w="rain" style="--pc:var(--sky)">雨</button>
+            <button class="pill" data-w="snow" style="--pc:var(--sky)">雪</button>
+          </div>
+          <p class="dev-note" style="margin:0"><b>开发注记</b>：数据走 Open-Meteo（免费无 key），默认定位东京可改，1 小时缓存一次；顶栏放迷你胶囊版（①里已放），点开弹这张大卡；雨雪天可联动桌面动效自动切细雨 / 落雪，做成开关默认关。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ 按钮体系 -->
+  <section class="act" id="s3">
+    <div class="act-tag" style="--tag:var(--mint)"><em>③</em>按钮全案 · 糖霜与果冻</div>
+    <p class="act-note">病根找到啦：深色主题下未选中的胶囊没有自己的底色，跟深紫底融成一坨黑。新规矩是所有胶囊自带半透明「糖霜底」，选中才升级成糖果实底。切换上面的主题看，六套底下都立得住。</p>
+    <div class="canvas">
+      <div class="btn-compare">
+        <div class="btn-panel panel-dark">
+          <h4>现状 <span class="badge-bad">黑药丸</span></h4>
+          <div class="kit-row" style="gap:8px">
+            <button class="old-pill sel">待定 1</button>
+            <button class="old-pill">想看</button>
+            <button class="old-pill">在追</button>
+            <button class="old-pill">看完</button>
+            <button class="old-pill">弃剧</button>
+          </div>
+          <div class="kit-row" style="gap:8px">
+            <button class="old-pill">A−</button>
+            <button class="old-pill">105%</button>
+            <button class="old-pill">A＋</button>
+          </div>
+          <p class="dev-note" style="margin:6px 0 0; color:#9c8fc0">未选中态和背景几乎同色，边界靠猜。</p>
+        </div>
+        <div class="btn-panel" style="border:1.5px solid var(--frost-bd); background: color-mix(in srgb, var(--frost) 50%, transparent)">
+          <h4>新体系 <span class="badge-good">糖霜底</span></h4>
+          <div class="kit-row" style="gap:8px">
+            <button class="pill on" style="--pc:var(--peach)">待定 <span class="n">1</span></button>
+            <button class="pill">想看</button>
+            <button class="pill">在追</button>
+            <button class="pill">看完</button>
+            <button class="pill">弃剧</button>
+          </div>
+          <div class="kit-row" style="gap:8px">
+            <button class="pill">A−</button>
+            <span class="bar-label" style="letter-spacing:0">105%</span>
+            <button class="pill">A＋</button>
+          </div>
+          <p class="dev-note" style="margin:6px 0 0">糖霜底任何主题都看得见边界，选中态一眼锁定。</p>
+        </div>
+      </div>
+      <div style="margin-top:22px">
+        <div class="kit-row"><span class="kit-label">状态四连</span>
+          <button class="pill">默认</button>
+          <button class="pill pseudo-hover">悬浮</button>
+          <button class="pill pseudo-active">按下</button>
+          <button class="pill on" style="--pc:var(--peach)">选中</button>
+        </div>
+        <div class="kit-row"><span class="kit-label">果冻主钮</span>
+          <button class="jelly jc-mint">✓ 标记已读</button>
+          <button class="jelly jc-sky">同步</button>
+          <button class="jelly jc-butter">✎ 备注</button>
+          <button class="jelly jc-taro">下一篇未读 ›</button>
+          <button class="jelly jc-berry">废弃</button>
+          <button class="jelly jc-mint" disabled>禁用态</button>
+        </div>
+        <div class="kit-row"><span class="kit-label">图标圆钮</span>
+          <button class="icon-round">⇅</button>
+          <button class="icon-round">❀</button>
+          <button class="icon-round">◐</button>
+          <button class="icon-round">↻</button>
+        </div>
+      </div>
+    </div>
+    <p class="dev-note"><b>开发注记</b>：落地时把糖霜规格写进 styles.css 的 <b>.obos-pill 基类</b>，全系统胶囊（追剧墙五态 / 文章分类 / 日历双模 / 账目 / 时间选择器）统一继承，一处定义全库生效；果冻钮沿用现有 --jc 语义色体系不动。</p>
+  </section>
+
+  <!-- ④ 图标三案 -->
+  <section class="act" id="s4">
+    <div class="act-tag" style="--tag:var(--taro)"><em>④</em>RuruOS 徽记 · 三案任选</div>
+    <p class="act-note">顶栏以后只放这一颗图标，不再带文字。三案都按 16px 最小尺寸验过形，深浅底各看一眼再选。</p>
+    <div class="logo-grid" id="logoGrid"></div>
+    <p class="dev-note"><b>开发注记</b>：选定后我把 SVG 写进插件 addIcon，同步替换左侧栏 ribbon 徽记和顶栏；文字「RuruOS · 中枢」从界面移除，只在悬浮 tooltip 里保留。</p>
+  </section>
+
+  <!-- ⑤ 阅读器 -->
+  <section class="act" id="s5">
+    <div class="act-tag" style="--tag:var(--peach)"><em>⑤</em>阅读器 · 版宽调节与新便利贴</div>
+    <p class="act-note">顶栏加一颗三档版宽段选，和字号胶囊并排；便利贴退到奶油微黄，底色跟主题走，右上角加了删除（点一下变红问你「确认删除？」，再点才真删）。切主题看便利贴的颜色联动。</p>
+    <div class="reader-mock">
+      <div class="reader-bar-mock">
+        <button class="pill">‹ 中枢</button>
+        <span class="art-cat" style="--cc:var(--taro)">设计</span>
+        <span class="hero-space" style="flex:1"></span>
+        <div class="width-seg" id="widthSeg">
+          <button data-w="720">舒适</button>
+          <button data-w="1000" class="on">标准</button>
+          <button data-w="1340">满屏</button>
+        </div>
+        <button class="pill">A−</button>
+        <button class="pill">A＋</button>
+        <button class="jelly jc-butter" style="padding:8px 16px; font-size:0.84em">✎ 备注●</button>
+        <button class="jelly jc-mint" style="padding:8px 16px; font-size:0.84em">标记已读</button>
+      </div>
+      <div class="reader-page-mock" id="readerPage">
+        <h2 class="rp-title">配色灵感｜9 组超好看舒适感品牌设计配色</h2>
+        <div class="rp-meta">色所　·　收录 2026-06-28　·　微信公众号</div>
+        <div class="note-v6">
+          <div class="note-head">
+            <span class="note-kick">✎ 我的备注</span>
+            <span class="note-hint" id="noteHint">已保存 ✓</span>
+            <span class="note-sp"></span>
+            <button class="note-del" id="noteDel">删除备注</button>
+          </div>
+          <textarea class="note-ta" id="noteTa" rows="2">这组配色可以拿来做卡牌市场站的浅色主题备选，柠檬黄 #F9E076 记一下。</textarea>
+        </div>
+        <div class="rp-body">
+          <h3>柠檬苏打这一组</h3>
+          <p>柠檬黄打底，青柠绿点缀，石板灰收边。三个颜色摆在一起像夏天冰柜里那排汽水，明度都压在同一档，看久了眼睛不累。做品牌主视觉时黄色占七成，绿只出现在按钮和 hover，这个克制是它舒服的原因。</p>
+          <p>版宽切到「满屏」再回「舒适」，注意每行字数的变化：舒适档一行三十字上下，最适合精读；满屏档给带宽表格和大图的文章用。选择记在本机，下次打开还是你的宽度。</p>
+          <h3>莓果森林这一组</h3>
+          <p>树莓粉配苔藓绿，中间用米白隔开。饱和度一高就俗，这组把两个主色都往灰里拉了一步，反而显贵。适合文创和手账周边，印在牛皮纸上会更好看。</p>
+        </div>
+      </div>
+    </div>
+    <p class="dev-note"><b>开发注记</b>：版宽三档存 localStorage（obos-reader-width），与字号互不干扰；便利贴背景改用主题变量 --note-bg 派生，六主题自动各得其色；删除备注两段确认，删掉即从 frontmatter 抹掉 note 字段。</p>
+  </section>
+
+  <!-- ⑥ 废弃箱 -->
+  <section class="act" id="s6">
+    <div class="act-tag" style="--tag:var(--berry)"><em>⑥</em>文章卡 · 废弃箱</div>
+    <p class="act-note">文章卡的 tab 加一个「废弃」，误删的文章在这里躺着，随时恢复；「彻底删除」要点两次，第二次是红色的「确认？」。下面是活的，点点看。</p>
+    <div class="art-mock">
+      <div class="art-head">
+        <span class="art-title">待读文章</span>
+        <button class="pill" data-tab="unread" style="--pc:var(--berry)">待读 <span class="n">12</span></button>
+        <button class="pill" data-tab="read" style="--pc:var(--mint)">已读 <span class="n">3</span></button>
+        <button class="pill on" data-tab="trash" style="--pc:var(--taro)">废弃 <span class="n" id="trashCount">2</span></button>
+        <span class="hero-space" style="flex:1"></span>
+        <button class="jelly jc-taro" style="padding:8px 15px; font-size:0.8em">AI 浓缩</button>
+        <button class="jelly jc-sky" style="padding:8px 15px; font-size:0.8em">AI 清杂</button>
+      </div>
+      <div class="art-list" id="trashList">
+        <div class="art-row trash-row">
+          <span class="art-cat" style="--cc:var(--sky)">ai-coding</span>
+          <span class="art-name">Hermes Agent 24小时热帖速报（2026年6月28日）</span>
+          <span class="art-date">废弃于 07-09</span>
+          <button class="row-btn mint" data-act="restore">恢复</button>
+          <button class="row-btn danger" data-act="purge">彻底删除</button>
+        </div>
+        <div class="art-row trash-row">
+          <span class="art-cat" style="--cc:var(--peach)">商业变现</span>
+          <span class="art-name">转写残缺：每天4小时年入1400万（提取失败版）</span>
+          <span class="art-date">废弃于 07-10</span>
+          <button class="row-btn mint" data-act="restore">恢复</button>
+          <button class="row-btn danger" data-act="purge">彻底删除</button>
+        </div>
+      </div>
+      <div class="trash-tip">废弃 = 移入 vault 的 .trash 文件夹，可随时恢复；彻底删除 = 点一下即从磁盘移除、不可撤销（已拍板：不做二次确认，废弃箱本身就是缓冲带）。</div>
+    </div>
+    <p class="dev-note"><b>开发注记</b>：现在的「废弃」直接进系统废纸篓，插件看不见——落地时改为进 vault 内 <b>.trash/</b>（AI 清杂已在用同一目录），废弃 tab 才有东西可列；恢复 = 移回 Articles/ 并保留 frontmatter。</p>
+  </section>
+
+  <!-- 定案记录 -->
+  <section class="confirm-list">
+    <div class="act-tag" style="--tag:var(--mint)"><em>✓</em>已拍板 · 开发规格（2026-07-11）</div>
+    <div class="canvas confirm-card" style="border-left-color: var(--mint)">
+      <ol>
+        <li><b>桌面动效</b>：樱花 / 细雨 / 落雪 / 萤火四种，用户自选；每种带速度 / 数量 / 大小三项调节（本页控制条可试），默认「樱花」。</li>
+        <li><b>主题</b>：四浅二深六套 + 自调色相滑杆，全部保留。</li>
+        <li><b>日签卡</b>：句子位置照现状；句库口味＝文学 + 设计，不收诗词。</li>
+        <li><b>统计块</b>：四块放大、一块一色方案，通过。</li>
+        <li><b>天气</b>：晴 / 多云 / 雨 / 雪四态照现状；雨雪联动桌面动效做成开关、默认关。</li>
+        <li><b>徽记</b>：定 <b>B · 软糖 R</b>，界面只显示图标不带文字。</li>
+        <li><b>彻底删除</b>：单击即删、不做二次确认（废弃箱本身是缓冲带）。</li>
+      </ol>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ---------- 主题 ---------- */
+const body = document.body;
+body.dataset.theme = 'cream';
+const themePick = document.getElementById('themePick');
+themePick.addEventListener('click', e => {
+  const b = e.target.closest('.swatch'); if (!b) return;
+  body.dataset.theme = b.dataset.t;
+  body.style.removeProperty('--bg'); body.style.removeProperty('--bg2');
+  themePick.querySelectorAll('.swatch').forEach(s => s.classList.toggle('on', s === b));
+});
+document.getElementById('hueSlider').addEventListener('input', e => {
+  const h = +e.target.value;
+  const dark = body.dataset.theme.includes('night');
+  body.style.setProperty('--bg', dark ? `hsl(${h} 42% 24%)` : `hsl(${h} 48% 94%)`);
+  body.style.setProperty('--bg2', dark ? `hsl(${h} 44% 18%)` : `hsl(${h} 42% 89%)`);
+  themePick.querySelectorAll('.swatch').forEach(s => s.classList.remove('on'));
+});
+
+/* ---------- 桌面动效 ---------- */
+const fxHost = document.getElementById('fx');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* 四项可调：速度 / 数量 / 大小 / 方向（-45°~45°，负=向左斜），正式版存 localStorage 每项独立记忆 */
+const fxState = { mode: 'sakura', speed: 1, count: 1, size: 1, angle: 10 };
+function spawnFx() {
+  fxHost.innerHTML = '';
+  if (reduced || fxState.mode === 'none') return;
+  const cfg = { sakura: ['petal', 22], rain: ['rain', 38], snow: ['snow', 26], fly: ['fly', 14] }[fxState.mode];
+  if (!cfg) return;
+  const [cls, base] = cfg;
+  const n = Math.max(4, Math.round(base * fxState.count));
+  /* 横向漂移：全程 118vh × tan(角度)；萤火向上飘，方向反过来才符合直觉 */
+  const drift = Math.tan(fxState.angle * Math.PI / 180) * 118 * (cls === 'fly' ? -1 : 1);
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement('i');
+    el.className = cls;
+    const d = (cls === 'rain' ? 0.9 + Math.random() * 0.6 : 8 + Math.random() * 9) / fxState.speed;
+    const s = (cls === 'snow' ? 4 + Math.random() * 4 : cls === 'fly' ? 4 + Math.random() * 3 : 10 + Math.random() * 8) * fxState.size;
+    /* 出生带按漂移方向加宽，斜飘时画面两侧不出现空档 */
+    const pad = Math.min(45, Math.abs(drift));
+    const x = -pad * (drift > 0 ? 1 : 0) + Math.random() * (100 + pad);
+    el.style.setProperty('--x', x.toFixed(1) + 'vw');
+    el.style.setProperty('--d', d.toFixed(2) + 's');
+    el.style.setProperty('--dl', (-Math.random() * d).toFixed(2) + 's');
+    el.style.setProperty('--s', s.toFixed(1) + 'px');
+    el.style.setProperty('--sw', (14 + Math.random() * 26).toFixed(0) + 'px');
+    el.style.setProperty('--dx', drift.toFixed(1) + 'vh');
+    el.style.setProperty('--tilt', fxState.angle.toFixed(0) + 'deg');
+    const b = document.createElement('b');
+    el.appendChild(b);
+    fxHost.appendChild(el);
+  }
+}
+const fxPick = document.getElementById('fxPick');
+fxPick.addEventListener('click', e => {
+  const b = e.target.closest('.fx-pick'); if (!b) return;
+  fxPick.querySelectorAll('.fx-pick').forEach(x => x.classList.toggle('on', x === b));
+  fxState.mode = b.dataset.fx;
+  spawnFx();
+});
+document.getElementById('fxSpeed').addEventListener('input', e => { fxState.speed = e.target.value / 100; spawnFx(); });
+document.getElementById('fxCount').addEventListener('input', e => { fxState.count = e.target.value / 100; spawnFx(); });
+document.getElementById('fxSize').addEventListener('input', e => { fxState.size = e.target.value / 100; spawnFx(); });
+document.getElementById('fxAngle').addEventListener('input', e => { fxState.angle = +e.target.value; spawnFx(); });
+spawnFx();
+
+/* ---------- 时钟与日签 ---------- */
+const parts = [[5,'深夜巡航'],[9,'清晨拾光'],[13,'上午冲刺'],[17,'午后小憩'],[21,'黄昏散步'],[24,'夜色温柔']];
+function tick() {
+  const d = new Date();
+  const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').innerHTML = `${hh}<span class="colon">:</span>${mm}`;
+  const week = ['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];
+  document.getElementById('dateLine').textContent = `${d.getMonth()+1}月${d.getDate()}日 · ${week}`;
+  const h = d.getHours();
+  document.getElementById('dayPart').textContent = (parts.find(p => h < p[0]) || parts[5])[1];
+  const g = h < 5 ? '夜深了' : h < 9 ? '早安' : h < 13 ? '上午好' : h < 18 ? '午后好' : h < 22 ? '晚上好' : '夜深了';
+  document.getElementById('greetLine').innerHTML = `${g}，Lulu <span class="flower">✿</span>`;
+}
+tick(); setInterval(tick, 1000);
+
+/* ---------- 句子精选（正式版 5 分钟，Demo 12 秒） ---------- */
+/* 口味已拍板：文学 + 设计，不收诗词 */
+const quotes = [
+  ['一定要爱着点什么，恰似草木对光阴的钟情。','汪曾祺'],
+  ['好的设计是尽可能少的设计。','迪特·拉姆斯'],
+  ['凡是过往，皆为序章。','莎士比亚'],
+  ['细节不只是细节，它们成就设计。','查尔斯·伊姆斯'],
+  ['慢慢走，欣赏啊。','朱光潜'],
+  ['从前的日色变得慢，车、马、邮件都慢。','木心'],
+  ['所谓设计，就是通过创造与交流，来认识我们生活的世界。','原研哉'],
+  ['黑夜给了我黑色的眼睛，我却用它寻找光明。','顾城'],
+  ['器物之美，在于被使用。','柳宗悦'],
+  ['世界上只有一种真正的英雄主义，就是认清生活真相之后依然热爱生活。','罗曼·罗兰'],
+  ['如果没有小确幸，人生只不过是干巴巴的沙漠而已。','村上春树'],
+  ['山川是不卷收的文章，日月为你掌灯伴读。','简媜'],
+];
+let qi = 0;
+const qText = document.getElementById('quoteText'), qSrc = document.getElementById('quoteSrc');
+function nextQuote() {
+  qi = (qi + 1) % quotes.length;
+  qText.style.opacity = 0;
+  setTimeout(() => {
+    qText.textContent = quotes[qi][0];
+    qSrc.textContent = '—— ' + quotes[qi][1];
+    qText.style.opacity = 1;
+  }, 450);
+}
+document.getElementById('quoteNext').addEventListener('click', nextQuote);
+setInterval(nextQuote, 12000);
+
+/* ---------- 天气状态 ---------- */
+const wxData = { sun: ['26','晴 · 微风拂过'], cloud: ['24','多云 · 云在散步'], rain: ['21','小雨 · 记得带伞'], snow: ['-1','小雪 · 落雪成糖'] };
+document.getElementById('wxStates').addEventListener('click', e => {
+  const b = e.target.closest('.pill'); if (!b) return;
+  document.querySelectorAll('#wxStates .pill').forEach(x => x.classList.toggle('on', x === b));
+  const w = b.dataset.w;
+  document.getElementById('wxCard').dataset.w = w;
+  document.getElementById('wxTemp').innerHTML = wxData[w][0] + '<small>°C</small>';
+  document.getElementById('wxDesc').textContent = wxData[w][1];
+});
+
+/* ---------- 徽记三案 ---------- */
+/* 每案渐变 id 唯一，避免跨 SVG 的 defs 抢定义 */
+const petal = 'M24 10.5 C28.2 14 28.8 19.2 24 23.4 C19.2 19.2 19.8 14 24 10.5 Z';
+const markA = `<svg viewBox="0 0 48 48"><defs><linearGradient id="gA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8fab"/><stop offset="1" stop-color="#ffab76"/></linearGradient></defs>
+  <rect x="2" y="2" width="44" height="44" rx="14" fill="#fffdf9"/>
+  ${[0,72,144,216,288].map(r => `<path d="${petal}" fill="url(#gA)" transform="rotate(${r} 24 24)"/>`).join('')}
+  <circle cx="24" cy="24" r="3" fill="#ffd66b"/></svg>`;
+const markB = `<svg viewBox="0 0 48 48"><defs><linearGradient id="gB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8fab"/><stop offset="1" stop-color="#b9a5f5"/></linearGradient></defs>
+  <rect x="2" y="2" width="44" height="44" rx="14" fill="url(#gB)"/>
+  <ellipse cx="17" cy="11" rx="9" ry="4.5" fill="#fff" opacity="0.36" transform="rotate(-14 17 11)"/>
+  <text x="24" y="34.5" text-anchor="middle" font-family="Yuanti SC, Hiragino Maru Gothic ProN, sans-serif" font-size="29" font-weight="800" fill="#fff">R</text></svg>`;
+const markC = `<svg viewBox="0 0 48 48"><defs><linearGradient id="gC" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7db8f7"/><stop offset="1" stop-color="#b9a5f5"/></linearGradient></defs>
+  <rect x="2" y="2" width="44" height="44" rx="14" fill="#fffdf9"/>
+  <path d="M24 7.5 C26 18 30 22 40.5 24 C30 26 26 30 24 40.5 C22 30 18 26 7.5 24 C18 22 22 18 24 7.5 Z" fill="url(#gC)"/>
+  <ellipse cx="24" cy="24" rx="15.5" ry="6" fill="none" stroke="#ffb0c4" stroke-width="1.6" transform="rotate(-22 24 24)"/>
+  <circle cx="36.5" cy="18.5" r="2.6" fill="#ffd66b"/></svg>`;
+const logos = [
+  ['A', '樱瓣印', '五瓣樱花对着桌面樱花动效，莓果到蜜桃的渐变是系统主色；白瓷章底，深浅主题都干净。', markA],
+  ['B', '软糖 R', '一颗果冻感的 R 字牌，最直白的品牌记号；渐变从莓果滑向香芋，顶部一条高光是糖的光泽。', markB],
+  ['C', '星芒糖珠', '现在菱形徽记的进化版：四芒星加一圈糖珠轨道，保留旧识别的骨相，换了糖果的皮。', markC],
+];
+document.getElementById('logoGrid').innerHTML = logos.map(([k, name, why, svg]) => `
+  <div class="logo-card">
+    <div class="logo-hero"><span style="width:88px; flex:none">${svg}</span>
+      <div><div class="logo-name">${k} · ${name}</div><div class="logo-why">${why}</div></div></div>
+    <div class="logo-sizes">
+      <figure><span style="display:block;width:44px">${svg}</span><figcaption>44 顶栏</figcaption></figure>
+      <figure><span style="display:block;width:24px">${svg}</span><figcaption>24 侧栏</figcaption></figure>
+      <figure><span style="display:block;width:16px">${svg}</span><figcaption>16 tab</figcaption></figure>
+    </div>
+    <div class="logo-ctx">
+      <span class="ctx-chip ctx-light"><span style="width:20px; flex:none">${svg}</span>奶油白天</span>
+      <span class="ctx-chip ctx-dark"><span style="width:20px; flex:none">${svg}</span>莓果夜晚</span>
+    </div>
+    <button class="jelly jc-taro pick-logo" data-k="${k}">就选 ${k} 这颗</button>
+  </div>`).join('');
+/* 已拍板：徽记定 B「软糖 R」，顶栏默认即 B；其余两案留档可试穿 */
+document.getElementById('heroMark').outerHTML = markB.replace('<svg ', '<svg class="hero-mark" id="heroMark" ');
+const pickedBtn = document.querySelector('.pick-logo[data-k="B"]');
+if (pickedBtn) { pickedBtn.classList.add('picked'); pickedBtn.textContent = '✓ 已定 B（拍板）'; }
+document.getElementById('logoGrid').addEventListener('click', e => {
+  const b = e.target.closest('.pick-logo'); if (!b) return;
+  document.querySelectorAll('.pick-logo').forEach(x => { x.classList.remove('picked'); x.textContent = `就选 ${x.dataset.k} 这颗`; });
+  b.classList.add('picked'); b.textContent = `✓ 已选 ${b.dataset.k}（顶栏已换上）`;
+  const svg = logos.find(l => l[0] === b.dataset.k)[3];
+  document.getElementById('heroMark').outerHTML = svg.replace('<svg ', '<svg class="hero-mark" id="heroMark" ');
+});
+
+/* ---------- 版宽段选 ---------- */
+document.getElementById('widthSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('#widthSeg button').forEach(x => x.classList.toggle('on', x === b));
+  document.getElementById('readerPage').style.setProperty('--pw', b.dataset.w + 'px');
+});
+
+/* ---------- 便利贴：删除两段确认 ---------- */
+const noteDel = document.getElementById('noteDel');
+let delArmed = null;
+noteDel.addEventListener('click', () => {
+  if (!noteDel.classList.contains('confirm')) {
+    noteDel.classList.add('confirm'); noteDel.textContent = '确认删除？';
+    delArmed = setTimeout(() => { noteDel.classList.remove('confirm'); noteDel.textContent = '删除备注'; }, 3000);
+  } else {
+    clearTimeout(delArmed);
+    document.getElementById('noteTa').value = '';
+    document.getElementById('noteHint').textContent = '备注已删除，frontmatter 的 note 字段已抹掉';
+    noteDel.classList.remove('confirm'); noteDel.textContent = '删除备注';
+  }
+});
+document.getElementById('noteTa').addEventListener('input', () => {
+  const hint = document.getElementById('noteHint');
+  hint.textContent = '保存中…';
+  clearTimeout(hint._t); hint._t = setTimeout(() => hint.textContent = '已保存 ✓', 900);
+});
+
+/* ---------- 废弃箱：恢复与彻底删除 ---------- */
+const trashList = document.getElementById('trashList');
+trashList.addEventListener('click', e => {
+  const b = e.target.closest('.row-btn'); if (!b) return;
+  const row = b.closest('.art-row');
+  /* 已拍板：彻底删除单击即删，不做二次确认（废弃箱本身是缓冲带） */
+  row.classList.add('gone');
+  setTimeout(() => row.remove(), 420);
+  bumpTrash(-1);
+});
+function bumpTrash(d) {
+  const el = document.getElementById('trashCount');
+  el.textContent = Math.max(0, +el.textContent + d);
+}
+</script>
+
+</body>
+</html>

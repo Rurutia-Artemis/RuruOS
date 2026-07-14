@@ -1,0 +1,66 @@
+<svg viewBox="0 0 1200 300" width="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="RuruOS 软糖手账个人知识系统">
+  <defs>
+    <linearGradient id="rr-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff7ee"/>
+      <stop offset="0.55" stop-color="#fdefdd"/>
+      <stop offset="1" stop-color="#fbe8ef"/>
+    </linearGradient>
+    <linearGradient id="rr-name" x1="0" y1="0" x2="1" y2="0.35">
+      <stop offset="0" stop-color="#ff8fab"/>
+      <stop offset="0.48" stop-color="#ffab76"/>
+      <stop offset="1" stop-color="#b9a5f5"/>
+    </linearGradient>
+    <linearGradient id="rr-jelly" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.65"/>
+      <stop offset="0.4" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 糖霜底卡 -->
+  <rect x="6" y="6" width="1188" height="288" rx="30" fill="url(#rr-bg)" stroke="#f3d9c3" stroke-width="2"/>
+
+  <!-- 背景糖云光斑 -->
+  <circle cx="150" cy="70" r="90" fill="#ffd66b" opacity="0.16"/>
+  <circle cx="1050" cy="230" r="110" fill="#7db8f7" opacity="0.13"/>
+  <circle cx="960" cy="60" r="70" fill="#ff8fab" opacity="0.14"/>
+
+  <!-- 名牌字 -->
+  <text x="90" y="150" font-family="ui-rounded, 'Hiragino Maru Gothic ProN', 'Yuanti SC', -apple-system, 'Segoe UI', sans-serif" font-weight="800" font-size="88" fill="url(#rr-name)">RuruOS</text>
+  <text x="94" y="204" font-family="ui-rounded, 'Hiragino Maru Gothic ProN', 'Yuanti SC', -apple-system, 'Segoe UI', sans-serif" font-weight="700" font-size="30" fill="#8a6f5c">软糖手账 · 个人知识系统</text>
+  <text x="94" y="246" font-family="-apple-system, 'PingFang SC', 'Segoe UI', sans-serif" font-size="18" fill="#a58c78">数据是朴素的 markdown，界面是可爱的糖果——两层互不绑架</text>
+
+  <!-- 糖果六色点 -->
+  <g>
+    <circle cx="96"  cy="76" r="11" fill="#ff8fab"/>
+    <circle cx="128" cy="76" r="11" fill="#ffab76"/>
+    <circle cx="160" cy="76" r="11" fill="#ffd66b"/>
+    <circle cx="192" cy="76" r="11" fill="#6fd8b4"/>
+    <circle cx="224" cy="76" r="11" fill="#7db8f7"/>
+    <circle cx="256" cy="76" r="11" fill="#b9a5f5"/>
+  </g>
+
+  <!-- 右侧果冻手账卡：三张叠放 -->
+  <g transform="translate(760 52) rotate(3)">
+    <rect width="330" height="196" rx="22" fill="#ffffff" opacity="0.55" stroke="#eed7c2" stroke-width="2" transform="translate(26 22) rotate(4)"/>
+    <rect width="330" height="196" rx="22" fill="#ffffff" opacity="0.75" stroke="#eed7c2" stroke-width="2" transform="translate(12 10) rotate(-3)"/>
+    <rect width="330" height="196" rx="22" fill="#fffdf8" stroke="#eed7c2" stroke-width="2"/>
+    <rect width="330" height="196" rx="22" fill="url(#rr-jelly)"/>
+    <!-- 手账卡内容：贴纸标题 + 虚线 + 糖果胶囊 -->
+    <rect x="22" y="22" width="120" height="34" rx="12" fill="#ffd66b" opacity="0.9" transform="rotate(-2 82 39)"/>
+    <text x="40" y="45" font-family="ui-rounded, 'Hiragino Maru Gothic ProN', -apple-system, sans-serif" font-weight="800" font-size="18" fill="#7a5a34" transform="rotate(-2 82 39)">今日一页</text>
+    <line x1="22" y1="80" x2="308" y2="80" stroke="#e8d5c0" stroke-width="2" stroke-dasharray="6 6"/>
+    <rect x="22" y="98"  width="180" height="14" rx="7" fill="#f3e3d3"/>
+    <rect x="22" y="124" width="240" height="14" rx="7" fill="#f3e3d3"/>
+    <rect x="22" y="150" width="140" height="14" rx="7" fill="#f3e3d3"/>
+    <rect x="236" y="142" width="72" height="30" rx="12" fill="#6fd8b4"/>
+    <text x="252" y="163" font-family="ui-rounded, -apple-system, sans-serif" font-weight="800" font-size="15" fill="#1f5c46">完成</text>
+    <!-- 和纸胶带 -->
+    <rect x="130" y="-12" width="76" height="26" rx="4" fill="#b9a5f5" opacity="0.45" transform="rotate(-6 168 1)"/>
+  </g>
+
+  <!-- 飘落樱瓣 -->
+  <ellipse cx="700" cy="60"  rx="9" ry="6" fill="#ffb3c6" opacity="0.85" transform="rotate(-24 700 60)"/>
+  <ellipse cx="672" cy="120" rx="7" ry="5" fill="#ffc9d6" opacity="0.75" transform="rotate(18 672 120)"/>
+  <ellipse cx="716" cy="180" rx="8" ry="5" fill="#ffb3c6" opacity="0.6"  transform="rotate(-40 716 180)"/>
+</svg>

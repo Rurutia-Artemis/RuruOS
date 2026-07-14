@@ -1,0 +1,9 @@
+{
+  "id": "obos-home",
+  "name": "RuruOS 中枢",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "OBOS 个人知识系统中枢主屏：待办、项目、阅读、追剧、账目。",
+  "author": "Lulu & Claude",
+  "isDesktopOnly": false
+}

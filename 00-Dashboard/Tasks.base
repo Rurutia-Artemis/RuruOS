@@ -1,0 +1,38 @@
+filters:
+  and:
+    - file.inFolder("40-Life/Tasks")
+    - type == "task"
+properties:
+  note.title:
+    displayName: 事项
+  note.done:
+    displayName: 完成
+  note.due:
+    displayName: 截止
+  note.priority:
+    displayName: 优先级
+views:
+  - type: table
+    name: 待办
+    filters:
+      and:
+        - done == false
+    order:
+      - note.done
+      - note.title
+      - note.due
+      - note.priority
+    sort:
+      - property: note.due
+        direction: ASC
+  - type: table
+    name: 已完成
+    filters:
+      and:
+        - done == true
+    order:
+      - note.title
+      - note.due
+    sort:
+      - property: note.due
+        direction: DESC
