@@ -1818,3 +1818,116 @@
 .obos-topbar.obos-hero .obos-name:hover {
   filter: drop-shadow(0 3px 16px color-mix(in srgb, var(--berry) 55%, transparent)) brightness(1.1);
 }
+
+/* ===== v8.1：按钮底色护甲（Baseline 事变） =====
+   Obsidian 本体 app.css：button:not(.clickable-icon){ background-color: var(--interactive-normal) }
+   特异性 (0,1,1) 恒压本文件所有单类名按钮 (0,1,0) 的底色声明。
+   Minimal 深色下该变量是 12% 透明白，打在糖霜底上看不出来，从未露馅；
+   Baseline 深色下是近黑实底——浅色糖主题里凡「底色靠 background-color（frost/纯色/半透明）」
+   的按钮整块发黑（四统计块最先中招）。
+   修法＝受害类在此重申底色 !important；会换底色的状态（:hover/.on）必须一并重申，
+   否则基态 !important 会反杀自家状态。不透明渐变底（果冻钮家族）是 background-image，天然免疫。
+   以后新增纯色/frost 底的按钮，来这里登记一行。 */
+.obos-stat-tile, .obos-stat-tile:hover { background-color: var(--frost) !important; }
+.obos-tab { background-color: color-mix(in srgb, var(--pc, var(--peach)) 16%, var(--frost)) !important; }
+.obos-tab:hover { background-color: color-mix(in srgb, var(--pc, var(--peach)) 28%, var(--frost)) !important; }
+.obos-tab.on { background-color: transparent !important; } /* 实底来自渐变，压住基态护甲即可 */
+.obos-kind-opt { background-color: var(--frost) !important; }
+.obos-kind-opt.on { background-color: var(--butter) !important; }
+.obos-kind-opt.k-紧急.on { background-color: var(--berry) !important; }
+.obos-kind-opt.k-长期.on { background-color: var(--sky) !important; }
+.obos-chip { background-color: color-mix(in srgb, var(--chip) 12%, var(--frost)) !important; }
+.obos-chip.on { background-color: var(--chip) !important; }
+.obos-quote-next { background-color: transparent !important; }
+.obos-row-del { background-color: transparent !important; }
+.obos-row-del:hover { background-color: var(--neg) !important; }
+.obos-mini-btn { background-color: color-mix(in srgb, var(--ink) 8%, transparent) !important; }
+.obos-dp-nav { background-color: color-mix(in srgb, var(--ink) 7%, transparent) !important; }
+.obos-dp-nav:hover { background-color: var(--berry) !important; }
+.obos-read-btn { background-color: var(--mint) !important; }
+.obos-plus { background-color: var(--mint) !important; }
+
+/* ===== v8.1：问候小字行永不折行 =====
+   greetRow 里金句 flex:1 抢空间，长句会把问候列挤窄、小字行被压成两行（用户多机复现）。
+   修法：问候列 flex:none 不许收缩（压掉 v6.4 的 min-width:0），小字行 nowrap——
+   空间不够时只许金句自己换行（它本就预留了 2.9em 两行高）。 */
+.obos-topbar.obos-hero .obos-hero-greet { flex: none; min-width: max-content; }
+.obos-topbar.obos-hero .obos-hello { white-space: nowrap; }
+
+/* ===== v8.1c：禅模式（全屏方章）=====
+   从中枢的全屏方章进全屏时 body 挂 obos-zen（main.js），Obsidian 外壳全部藏掉：
+   标签页栏 / 左侧图标条 / 视图头（前进后退行）/ 状态栏 / 左右侧边坞——只留中枢主界面。
+   绿灯钮或 Ctrl+Cmd+F 进的全屏不挂此类，正常写笔记不受影响；退出全屏自动摘类。 */
+body.obos-zen .workspace-ribbon,
+body.obos-zen .workspace-tab-header-container,
+body.obos-zen .mod-root .view-header,
+body.obos-zen .status-bar,
+body.obos-zen .workspace-split.mod-left-split,
+body.obos-zen .workspace-split.mod-right-split { display: none !important; }
+
+/* ===== v8.1d：主滚动条糖霜化 =====
+   糖果渐变细圆条：透明边框 + padding-box 裁剪让糖条离边留白显瘦；轨道全透明。
+   宽度守住 11px 配合 scrollbar-gutter: stable（v6.8 防抖三件套），不许因此复发胀缩。 */
+.obos-scroll::-webkit-scrollbar, .obos-reader-scroll::-webkit-scrollbar { width: 11px; }
+.obos-scroll::-webkit-scrollbar-track, .obos-reader-scroll::-webkit-scrollbar-track,
+.obos-scroll::-webkit-scrollbar-corner, .obos-reader-scroll::-webkit-scrollbar-corner { background: transparent; }
+.obos-scroll::-webkit-scrollbar-thumb, .obos-reader-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px; min-height: 44px;
+  border: 3.5px solid transparent; background-clip: padding-box;
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--berry) 52%, transparent), color-mix(in srgb, var(--taro) 52%, transparent));
+}
+.obos-scroll::-webkit-scrollbar-thumb:hover, .obos-reader-scroll::-webkit-scrollbar-thumb:hover {
+  background-image: linear-gradient(180deg, var(--berry), var(--taro));
+}
+/* 追剧墙横条并入同族 */
+.obos-wall::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--berry) 42%, transparent); }
+.obos-wall::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--berry) 78%, transparent); }
+
+/* ===== v8.1d：天气列微调 + 换城市 ===== */
+/* 体感/湿度/降水三格下移（6px 用户嫌不够，v8.1e 加到 12px） */
+.obos-hz-wxcol .obos-wxfacts { margin-top: 12px; }
+/* v8.1e 点击修复：天气小剧场 scale(1.5) 后云朵越出场景框，透明压住下方城市行吃掉点击——
+   整个场景与大温度都是纯装饰，关掉指针事件（装饰层教训 +1） */
+.obos-scene, .obos-wxtemp { pointer-events: none; }
+/* v8.1e 城市胶囊：别针 + 城市名的糖霜小药丸（下划线废除，用户嫌丑） */
+.obos-wxcity {
+  position: relative; z-index: 2;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3.5px 11px 3.5px 8px; border-radius: 999px;
+  background: var(--frost); border: 1.5px solid var(--frost-bd);
+  color: var(--muted); font-size: 0.88em; font-weight: 700;
+  max-width: 15em; white-space: nowrap;
+  cursor: pointer; transition: all 0.2s var(--spring);
+}
+.obos-wxcity svg { width: 13px; height: 13px; flex: none; color: var(--berry); }
+.obos-wxcity > span { overflow: hidden; text-overflow: ellipsis; }
+.obos-wxcity:hover {
+  transform: translateY(-1.5px); color: var(--ink);
+  border-color: color-mix(in srgb, var(--berry) 45%, var(--frost-bd));
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--berry) 22%, transparent);
+}
+/* 胶囊上抬的投影别被 desc 行的 overflow:hidden 切掉；长城市名的省略号由胶囊自己负责 */
+.obos-wxdesc { align-items: center; overflow: visible; }
+/* 换城市面板：盖在天气列上的糖霜卡（近实底，与日期选择器同族） */
+.obos-hz-wxcol { position: relative; }
+.obos-wxpick {
+  position: absolute; inset: 4px 16px 4px 0; z-index: 40;
+  display: flex; flex-direction: column; gap: 8px; padding: 12px;
+  border-radius: 16px; border: 1.5px solid var(--card-border);
+  background: color-mix(in srgb, var(--bg) 86%, #fff);
+  box-shadow: var(--shadow);
+}
+.obos-theme-dark .obos-wxpick { background: color-mix(in srgb, var(--bg) 80%, #6a5a9a); }
+.obos-wxpick input {
+  width: 100%; flex: none; border-radius: 10px; border: 1.5px solid var(--frost-bd);
+  background: var(--input-bg) !important; color: var(--ink) !important;
+  padding: 7px 10px; font-size: 0.92em;
+}
+.obos-wxpick-list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.obos-wxpick-row {
+  display: flex; align-items: baseline; gap: 8px; cursor: pointer;
+  padding: 7px 10px; border-radius: 10px; font-size: 0.92em; font-weight: 700; color: var(--ink);
+}
+.obos-wxpick-row:hover { background: var(--frost); }
+.obos-wxpick-row .sub { font-size: 0.82em; color: var(--muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.obos-wxpick-hint { color: var(--muted); font-size: 0.88em; padding: 8px 10px; }

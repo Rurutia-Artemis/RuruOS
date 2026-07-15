@@ -180,8 +180,12 @@ const ICON_DRAMA = '<svg viewBox="0 0 24 24" fill="none" stroke="#5c2438" stroke
 const ICON_SYNC_BTN = '<svg viewBox="0 0 24 24" fill="none" stroke="#26466a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 12 a7.1 7.1 0 0 1 12.2 -5"/><path d="M17.4 3.7 v3.7 h-3.7"/><path d="M19.1 12 a7.1 7.1 0 0 1 -12.2 5"/><path d="M6.6 20.3 v-3.7 h3.7"/><circle cx="12" cy="12" r="1.7" fill="#26466a" stroke="none"/></svg>';
 /* 动效 F3=飘落三瓣：大中小樱瓣 + 风线 */
 const ICON_FX_BTN = '<svg viewBox="0 0 24 24" fill="none" stroke="#5c2438" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M0 3.4 C-1.8 1.8 -2.2 -1 -1.1 -3.2 L0 -2.1 L1.1 -3.2 C2.2 -1 1.8 1.8 0 3.4 Z" fill="#ff9fb8" transform="translate(8.5 7.5) rotate(-28) scale(1.35)"/><path d="M0 3.4 C-1.8 1.8 -2.2 -1 -1.1 -3.2 L0 -2.1 L1.1 -3.2 C2.2 -1 1.8 1.8 0 3.4 Z" fill="#ffc9d9" transform="translate(15.5 12.5) rotate(38) scale(1.05)"/><path d="M0 3.4 C-1.8 1.8 -2.2 -1 -1.1 -3.2 L0 -2.1 L1.1 -3.2 C2.2 -1 1.8 1.8 0 3.4 Z" fill="#ffdde8" transform="translate(9.5 17.8) rotate(78) scale(0.8)"/><path d="M15 4.6 q2.8 -0.9 4.6 0.5" opacity="0.55"/><path d="M15.8 19.4 q2.4 0.9 4.2 -0.4" opacity="0.55"/></svg>';
+/* v8.1e 定位小别针：城市胶囊用，currentColor 随胶囊配色 */
+const ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21 C7.8 16.4 5.7 13 5.7 10.2 a6.3 6.3 0 1 1 12.6 0 C18.3 13 16.2 16.4 12 21 Z"/><circle cx="12" cy="10.1" r="2.1" fill="currentColor" stroke="none"/></svg>';
+/* v8.1 全屏=四角括号向外展开 + 中心糖点，与 S3 同笔触（2.4 圆头描边） */
+const ICON_FS_BTN = '<svg viewBox="0 0 24 24" fill="none" stroke="#1f5c46" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.2 4.4 H6 a1.6 1.6 0 0 0 -1.6 1.6 V9.2"/><path d="M14.8 4.4 H18 a1.6 1.6 0 0 1 1.6 1.6 V9.2"/><path d="M9.2 19.6 H6 a1.6 1.6 0 0 1 -1.6 -1.6 V14.8"/><path d="M14.8 19.6 H18 a1.6 1.6 0 0 0 1.6 -1.6 V14.8"/><circle cx="12" cy="12" r="1.7" fill="#1f5c46" stroke="none"/></svg>';
 /* 主题 T3=调色盘：主题=换色 */
-const ICON_THEME_BTN = '<svg viewBox="0 0 24 24" fill="none" stroke="#5c4420" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6 a8.4 8.4 0 1 0 0.2 16.8 c1.9 0 2.5 -1.2 2 -2.4 c-0.7 -1.5 0.3 -2.9 2 -2.9 h1.4 a3.5 3.5 0 0 0 3 -5.1 A8.4 8.4 0 0 0 12 3.6 Z" fill="#fff8e6"/><circle cx="8.1" cy="9.2" r="1.5" fill="#ff8fab" stroke="none"/><circle cx="12.4" cy="7.3" r="1.5" fill="#7db8f7" stroke="none"/><circle cx="16.2" cy="9.4" r="1.5" fill="#6fd8b4" stroke="none"/><circle cx="7.5" cy="13.6" r="1.5" fill="#b9a5f5" stroke="none"/></svg>';
+const ICON_THEME_BTN ='<svg viewBox="0 0 24 24" fill="none" stroke="#5c4420" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6 a8.4 8.4 0 1 0 0.2 16.8 c1.9 0 2.5 -1.2 2 -2.4 c-0.7 -1.5 0.3 -2.9 2 -2.9 h1.4 a3.5 3.5 0 0 0 3 -5.1 A8.4 8.4 0 0 0 12 3.6 Z" fill="#fff8e6"/><circle cx="8.1" cy="9.2" r="1.5" fill="#ff8fab" stroke="none"/><circle cx="12.4" cy="7.3" r="1.5" fill="#7db8f7" stroke="none"/><circle cx="16.2" cy="9.4" r="1.5" fill="#6fd8b4" stroke="none"/><circle cx="7.5" cy="13.6" r="1.5" fill="#b9a5f5" stroke="none"/></svg>';
 
 /* v6 拍板徽记 B「软糖 R」：莓果→香芋渐变方章 + 高光 + 白 R */
 const ICON_CREST = '<svg viewBox="0 0 48 48"><defs><linearGradient id="obosGB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8fab"/><stop offset="1" stop-color="#b9a5f5"/></linearGradient></defs><rect x="2" y="2" width="44" height="44" rx="14" fill="url(#obosGB)"/><ellipse cx="17" cy="11" rx="9" ry="4.5" fill="#fff" opacity="0.36" transform="rotate(-14 17 11)"/><text x="24" y="34.5" text-anchor="middle" font-family="Yuanti SC, Hiragino Maru Gothic ProN, sans-serif" font-size="29" font-weight="800" fill="#fff">R</text></svg>';
@@ -1957,6 +1961,36 @@ class ObosHomeView extends ItemView {
     this._partEl = chip.createSpan({ cls: 'obos-ds-part' });
     this._almanacEl = timecol.createDiv({ cls: 'obos-almanac' });
     const btns = timecol.createDiv({ cls: 'obos-hz-btns' });
+    /* v8.1 全屏方章：系统级全屏（electronWindow 是 Obsidian 暴露的 BrowserWindow 远程代理，
+       走 macOS 原生全屏；万一拿不到就退回网页全屏）
+       v8.1c 禅模式：从方章进的全屏给 body 挂 obos-zen，Obsidian 外壳全藏（样式在 styles.css）；
+       绿灯钮/快捷键进的全屏不受影响。退出全屏（任何途径）自动摘类。 */
+    const fsBtn = btns.createEl('button', { cls: 'obos-round', attr: { title: '全屏中枢（再点一次退出）', 'aria-label': '全屏' } });
+    fsBtn.innerHTML = ICON_FS_BTN;
+    fsBtn.style.setProperty('--bc', CANDY.mint);
+    const isFs = () => {
+      const w = window.electronWindow;
+      return w && typeof w.isFullScreen === 'function' ? w.isFullScreen() : !!document.fullscreenElement;
+    };
+    const syncZen = () => {
+      document.body.classList.toggle('obos-zen', isFs() && this._zenWanted);
+      if (!isFs()) this._zenWanted = false;
+    };
+    if (!this._zenHooked) {
+      this._zenHooked = true;
+      this.registerDomEvent(window, 'resize', syncZen);
+      this.register(() => document.body.classList.remove('obos-zen'));
+    }
+    fsBtn.onclick = () => {
+      const w = window.electronWindow;
+      const entering = !isFs();
+      this._zenWanted = entering;
+      if (w && typeof w.setFullScreen === 'function') w.setFullScreen(entering);
+      else if (entering) document.documentElement.requestFullscreen();
+      else if (document.fullscreenElement) document.exitFullscreen();
+      syncZen();
+      setTimeout(syncZen, 350); /* 原生全屏动画结束后再校一次 */
+    };
     const syncBtn = btns.createEl('button', { cls: 'obos-round', attr: { title: '与苹果提醒/日历同步', 'aria-label': '同步' } });
     syncBtn.innerHTML = ICON_SYNC_BTN;
     syncBtn.style.setProperty('--bc', CANDY.sky);
@@ -1973,6 +2007,7 @@ class ObosHomeView extends ItemView {
   /* v6.9 抖动修复：缓存新鲜时同步渲染。此前每次全量重渲染都先画一帧矮的「加载中」
      再换成高的完整卡，顶栏高度弹一下、滚动条跟着出/收——就是「界面一会儿大一会儿小」的根因 */
   async renderWeather(el) {
+    this.plugin.autoLocateOnce(); /* 首次装机没存过城市→按 IP 自动定一次 */
     let wx = this.plugin.freshWeather();
     if (!wx) {
       el.createDiv({ cls: 'obos-wx-loading', text: '天气加载中…' });
@@ -2008,7 +2043,11 @@ class ObosHomeView extends ItemView {
     temp.createSpan({ cls: 'u', text: '°C' });
     const dr = el.createDiv({ cls: 'obos-wxdesc' });
     dr.createEl('b', { text: desc });
-    dr.createSpan({ text: '东京 · 丰岛区' });
+    /* v8.1e 城市胶囊：别针+城市名的糖霜小药丸，点开换城市面板 */
+    const city = dr.createSpan({ cls: 'obos-wxcity', attr: { title: '点击换城市' } });
+    city.innerHTML = ICON_PIN;
+    city.createSpan({ text: this.plugin.getWxLoc().name });
+    city.onclick = () => this.openCityPicker(el);
     const facts = el.createDiv({ cls: 'obos-wxfacts' });
     const fact = (k, v) => {
       const f = facts.createDiv({ cls: 'obos-wx-h' });
@@ -2019,6 +2058,57 @@ class ObosHomeView extends ItemView {
     fact('湿度', `${cur.relative_humidity_2m}%`);
     const pp = wx.hourly && wx.hourly.precipitation_probability ? wx.hourly.precipitation_probability[0] : null;
     fact('降水', pp === null || pp === undefined ? '—' : `${pp}%`);
+  }
+
+  /* v8.1d 换城市面板：Open-Meteo 免 key 地理搜索（中文/拼音/英文）+ IP 自动定位 + 回默认 */
+  openCityPicker(host) {
+    const old = host.querySelector('.obos-wxpick');
+    if (old) { old.remove(); return; }
+    const pk = host.createDiv({ cls: 'obos-wxpick' });
+    const inp = pk.createEl('input', { attr: { type: 'text', placeholder: '搜城市：中文 / 拼音 / 英文' } });
+    const list = pk.createDiv({ cls: 'obos-wxpick-list' });
+    const row = (label, sub, onpick) => {
+      const r = list.createDiv({ cls: 'obos-wxpick-row' });
+      r.createSpan({ text: label });
+      if (sub) r.createSpan({ cls: 'sub', text: sub });
+      r.onclick = onpick;
+    };
+    const hint = t => { list.empty(); list.createDiv({ cls: 'obos-wxpick-hint', text: t }); };
+    const pick = loc => { this.plugin.setWxLoc(loc); new Notice(`天气城市已切到 ${loc.name}`); };
+    const renderHome = () => {
+      list.empty();
+      row('自动定位', '按网络 IP 估算，无需授权', async () => {
+        hint('定位中…');
+        const g = await this.plugin.ipLocate().catch(() => null);
+        if (g && g.name) pick(g);
+        else hint('定位失败，直接搜城市名吧');
+      });
+      row('东京 · 丰岛区', '默认', () => pick({ name: '东京 · 丰岛区', lat: 35.7295, lon: 139.7109, tz: 'Asia/Tokyo' }));
+    };
+    renderHome();
+    let seq = 0;
+    inp.oninput = () => {
+      const q = inp.value.trim();
+      window.clearTimeout(this._wxpickT);
+      if (!q) { renderHome(); return; }
+      this._wxpickT = window.setTimeout(async () => {
+        const my = ++seq;
+        hint('搜索中…');
+        try {
+          const res = await requestUrl({ url: `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=zh&format=json` });
+          if (my !== seq || !pk.isConnected) return;
+          const hits = (res.json && res.json.results) || [];
+          if (!hits.length) { hint('没搜到，换个写法试试（比如英文名）'); return; }
+          list.empty();
+          for (const r of hits) {
+            const sub = [r.admin1, r.country].filter(Boolean).join(' · ');
+            row(r.name, sub, () => pick({ name: r.name, lat: r.latitude, lon: r.longitude, tz: r.timezone || 'auto' }));
+          }
+        } catch (e) { if (my === seq && pk.isConnected) hint('搜索失败，检查网络后再试'); }
+      }, 350);
+    };
+    inp.onkeydown = ev => { if (ev.key === 'Escape') pk.remove(); };
+    inp.focus();
   }
 
   /* 时钟每秒走，问候与时辰章随小时切换 */
@@ -2048,9 +2138,8 @@ class ObosHomeView extends ItemView {
     }
     if (this._editingName) return; /* 名字编辑中不重写问候行 */
     const name = this.plugin.getUserName().replace(/[<>&"]/g, '');
-    /* v7.0 B案·大字名牌：小字时段问候 + 名字大号糖果渐变字 */
-    const mark = h >= 5 && h < 17 ? '☀︎' : '☾';
-    this._greetEl.innerHTML = `<span class="obos-hello">${greeting()} ${mark} ${part}</span><span class="obos-name" title="点击改称呼">${name}</span>`;
+    /* v7.0 B案·大字名牌：小字时段问候 + 名字大号糖果渐变字（v8.1 撤掉 ☀︎/☾ 装饰字符，用户嫌丑） */
+    this._greetEl.innerHTML = `<span class="obos-hello">${greeting()} ${part}</span><span class="obos-name" title="点击改称呼">${name}</span>`;
   }
 
   /* 句子精选：读 90-System/句子精选.md（句子｜出处 一行一条），5 分钟自动换 */
@@ -3172,7 +3261,7 @@ module.exports = class ObosHomePlugin extends Plugin {
     this.refreshAllViews();
   }
 
-  /* 天气：Open-Meteo 免 key，默认东京丰岛区，1 小时缓存 */
+  /* 天气：Open-Meteo 免 key，城市可选（v8.1d），1 小时缓存 */
   /* 缓存新鲜时同步取（重渲染不闪加载态）；过期返回 null 走异步 fetch */
   freshWeather() {
     return (this._wx && Date.now() - this._wxTs < 3600e3) ? this._wx : null;
@@ -3180,15 +3269,54 @@ module.exports = class ObosHomePlugin extends Plugin {
   async fetchWeather() {
     const now = Date.now();
     if (this._wx && now - this._wxTs < 3600e3) return this._wx;
-    /* 天气默认东京。改成你的城市 = 换下面的 latitude/longitude 和 timezone（Open-Meteo 免 key），
-       经纬度查询：https://open-meteo.com/en/docs 顶部搜索框。详见 docs/自定义指南.md */
-    const url = 'https://api.open-meteo.com/v1/forecast?latitude=35.7295&longitude=139.7109'
+    /* v8.1 起城市不用改代码：首次启动按 IP 自动定位，之后点天气卡的城市胶囊随时换（localStorage 记忆） */
+    const loc = this.getWxLoc();
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}`
       + '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code'
-      + '&hourly=temperature_2m,precipitation_probability&forecast_hours=3&timezone=Asia%2FTokyo';
+      + `&hourly=temperature_2m,precipitation_probability&forecast_hours=3&timezone=${encodeURIComponent(loc.tz || 'auto')}`;
     const res = await requestUrl({ url });
     this._wx = res.json;
     this._wxTs = now;
     return this._wx;
+  }
+
+  /* v8.1d 天气城市：点城市名可换（localStorage 记忆），默认东京丰岛区 */
+  getWxLoc() {
+    try {
+      const v = JSON.parse(window.localStorage.getItem('obos-wx-loc'));
+      if (v && typeof v.lat === 'number' && typeof v.lon === 'number' && v.name) return v;
+    } catch (e) { /* ignore */ }
+    return { name: '东京 · 丰岛区', lat: 35.7295, lon: 139.7109, tz: 'Asia/Tokyo' };
+  }
+
+  setWxLoc(loc) {
+    try { window.localStorage.setItem('obos-wx-loc', JSON.stringify(loc)); } catch (e) { /* ignore */ }
+    this._wx = null;
+    this._wxTs = 0; /* 换城市立即失效缓存 */
+    this.refreshAllViews();
+  }
+
+  /* v8.1e 按网络 IP 估算位置：主 ip-api（免费额度宽），备 ipapi.co（免费档限流严）；都不通返回 null */
+  async ipLocate() {
+    try {
+      const r1 = await requestUrl({ url: 'http://ip-api.com/json/?lang=zh-CN&fields=status,city,lat,lon,timezone' });
+      if (r1.json && r1.json.status === 'success') return { name: r1.json.city, lat: r1.json.lat, lon: r1.json.lon, tz: r1.json.timezone || 'auto' };
+    } catch (e) { /* 走备用通道 */ }
+    try {
+      const r2 = await requestUrl({ url: 'https://ipapi.co/json/' });
+      if (r2.json && r2.json.latitude) return { name: r2.json.city, lat: r2.json.latitude, lon: r2.json.longitude, tz: r2.json.timezone || 'auto' };
+    } catch (e) { /* ignore */ }
+    return null;
+  }
+
+  /* v8.1e 首次自动定位：没存过城市就按 IP 定一次并记住；失败保持默认东京，不打扰 */
+  autoLocateOnce() {
+    if (this._wxAutoTried) return;
+    this._wxAutoTried = true;
+    let saved = null;
+    try { saved = window.localStorage.getItem('obos-wx-loc'); } catch (e) { /* ignore */ }
+    if (saved) return;
+    this.ipLocate().then(g => { if (g && g.name) this.setWxLoc(g); }).catch(() => { /* 保持默认 */ });
   }
 
   /* 问候称呼：用户可点名字改，localStorage 记忆 */

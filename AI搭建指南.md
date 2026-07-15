@@ -3,15 +3,16 @@
 > **这份文档写给 AI 执行。** 用户会把本仓库地址或这份文档丢给你（Claude Code、Codex、Cursor、任何能执行命令的智能体），你的任务是把 RuruOS 在用户机器上搭到「打开 Obsidian 就能用」的程度。
 > 原则：能自动的全部自动做掉；只有标了【需要用户动手】的步骤才交还给用户，并把要说的话原样转达。
 
-## 第 0 步：确认环境，问三个问题
+## 第 0 步：确认环境，问两个问题
 
 先确认：操作系统（macOS / Windows / Linux）、`git` 是否可用（没有就先带用户装）。
 
-然后问用户三个问题（一次问完，别挤牙膏）：
+然后问用户两个问题（一次问完，别挤牙膏）：
 
 1. 库放哪个位置？（默认建议 `~/Documents/RuruOS`）
-2. 常驻哪个城市？（天气模块用；不答就默认东京）
-3. 顶栏名牌想显示什么名字？（不答就跳过，界面里随时可以点名字改）
+2. 顶栏名牌想显示什么名字？（不答就跳过，界面里随时可以点名字改）
+
+天气城市**不用问**：首次启动会按网络 IP 自动定位，之后点天气卡的城市胶囊随时可换。
 
 ## 第 1 步：克隆
 
@@ -21,15 +22,18 @@ git clone https://github.com/Rurutia-Artemis/RuruOS.git <用户指定的路径>
 
 用户想脱离上游自己维护的话，克隆后 `rm -rf .git && git init` 重新建库（推荐，这样他的私人数据不会误推回公开仓库的 fork 上）。
 
-克隆后自检：`.obsidian/plugins/obos-home/` 下 `main.js`、`styles.css`、`manifest.json`、`crest.png` 四个文件齐全才算成功。
+克隆后自检（两条都过才算成功）：
+
+1. `.obsidian/plugins/obos-home/` 下 `main.js`、`styles.css`、`manifest.json`、`crest.png` 四个文件齐全
+2. `.obsidian/plugins/` 下**有且只有一个** obos 开头的文件夹。若发现同名备份副本（如 `obos-home.bak-*`、`obos-home 副本`），必须移出 `.obsidian/plugins/`——Obsidian 按 manifest 的 `id` 认插件，同 id 的备份会遮蔽真身、让界面一直跑旧代码，重启也救不回（实战翻过车）。你以后替用户升级插件时同理：**备份永远放库外，不留在 plugins 目录里**
 
 ## 第 2 步：个性化配置
 
-都在 `.obsidian/plugins/obos-home/main.js`，改完有 node 环境就跑 `node --check main.js` 验证语法：
+改动都在 `.obsidian/plugins/obos-home/main.js`，改完有 node 环境就跑 `node --check main.js` 验证语法：
 
-1. **天气城市**：文件里搜 `open-meteo`，把 URL 中的 `latitude` / `longitude` / `timezone` 换成用户城市的值（坐标你自己查证，例：东京 35.7295 / 139.7109 / Asia%2FTokyo）。用户选东京就不用动。
-2. **项目卡（可选）**：文件顶部「公开版配置区」的 `PROJECTS_DIR` 填用户的代码目录绝对路径；用户不需要项目卡就保持空字符串。
-3. **名字**：不用改代码——告诉用户装好后点顶栏名字即可行内编辑。
+1. **项目卡（可选）**：文件顶部「公开版配置区」的 `PROJECTS_DIR` 填用户的代码目录绝对路径；用户不需要项目卡就保持空字符串。
+2. **名字**：不用改代码——告诉用户装好后点顶栏名字即可行内编辑。
+3. **天气**：不用配置。首次启动自动按 IP 定位；顺带告诉用户点天气卡的城市胶囊可随时换城市（挂 VPN 时定到出口城市属正常，手动搜一下即可）。
 
 ## 第 3 步：示例数据（先问再动）
 
@@ -57,9 +61,9 @@ git clone https://github.com/Rurutia-Artemis/RuruOS.git <用户指定的路径>
 
 逐项自查后把结果报给用户：
 
-- [ ] 库已克隆，插件四文件齐全
-- [ ] 天气坐标已按用户城市配置（或确认沿用东京）
-- [ ] `main.js` 语法检查通过
+- [ ] 库已克隆，插件四文件齐全，且 `.obsidian/plugins/` 下只有一个 obos-home（无同 id 备份副本）
+- [ ] 用户知道天气会自动定位、点城市胶囊可换
+- [ ] `main.js` 语法检查通过（若改过配置）
 - [ ] 用户确认中枢界面已打开
 - [ ] 用户知道 `从这里开始.md`（新手导览）和《给智能体的说明书.md》（喂给日常 AI）的位置
 - [ ] 示例数据已按用户意愿保留或清理
@@ -70,3 +74,4 @@ git clone https://github.com/Rurutia-Artemis/RuruOS.git <用户指定的路径>
 - 不改 `styles.css`（设计母版）；改任何界面样式前先读 `DESIGN.md` 与 `.claude/skills/tangshuang/`
 - macOS 的苹果同步**不要替用户开**：让用户自己点顶栏「同步」按钮（会弹系统授权窗，需要本人允许）
 - 用户手写的 `note`、`pinned` 字段永远保留勿动
+- 改插件前要备份的话，备份副本**永远放库外**，绝不留在 `.obsidian/plugins/` 里（同 id 会遮蔽真身，界面静默跑旧代码）

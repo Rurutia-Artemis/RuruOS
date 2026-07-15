@@ -89,7 +89,7 @@ git clone https://github.com/Rurutia-Artemis/RuruOS.git
 
 <img src="https://raw.githubusercontent.com/Rurutia-Artemis/RuruOS/main/docs/assets/sec-roadmap.svg" alt="v2.0 路线图（计划中）" width="100%">
 
-- 图形化设置页：天气城市、项目目录、用户名不再改代码
+- 图形化设置页：项目目录、AI 引擎不再改代码（天气城市已提前落地——点天气卡的城市胶囊即换，首次启动自动按 IP 定位）
 - 豆瓣评分自动抓取（现在靠 AI 按钮或手填）
 - 苹果同步脱离「Obsidian 开着」的限制
 - 移动端布局适配
