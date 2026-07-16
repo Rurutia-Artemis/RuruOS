@@ -1931,3 +1931,31 @@ body.obos-zen .workspace-split.mod-right-split { display: none !important; }
 .obos-wxpick-row:hover { background: var(--frost); }
 .obos-wxpick-row .sub { font-size: 0.82em; color: var(--muted); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .obos-wxpick-hint { color: var(--muted); font-size: 0.88em; padding: 8px 10px; }
+
+/* ===== v8.2：行增删丝滑三件套（待办/日历/文章通用，main.js enterCheck/leaveRow/FLIP 驱动） =====
+   进场：新建的行从上方浮入；
+   退场：JS 定格行高后过渡到 0——高度、上下内边距、虚线底边一起收掉，
+        下方内容随折叠平滑上移（这就是「完成后下面往上跳」的解法）；
+   位移：重渲染前后挪了位置的行由 WAAPI FLIP 从旧位置滑到新位置（新增行把兄弟推开时也丝滑）。 */
+@keyframes obos-row-in {
+  from { opacity: 0; transform: translateY(-9px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes obos-row-in-still {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.obos-row-enter { animation: obos-row-in 0.28s var(--spring) both; }
+/* 减动效偏好：保留淡入表意，去掉位移与弹性 */
+@media (prefers-reduced-motion: reduce) {
+  .obos-row-enter { animation: obos-row-in-still 0.18s ease-out both; }
+}
+.obos-row-leaving {
+  overflow: hidden; pointer-events: none;
+  transition: height 0.28s var(--ease), opacity 0.2s var(--ease), transform 0.28s var(--ease),
+              padding 0.28s var(--ease), margin 0.28s var(--ease), border-bottom-width 0.28s var(--ease);
+  opacity: 0 !important; transform: translateX(14px) !important;
+  padding-top: 0 !important; padding-bottom: 0 !important;
+  margin-top: 0 !important; margin-bottom: 0 !important;
+  border-bottom-width: 0 !important;
+}

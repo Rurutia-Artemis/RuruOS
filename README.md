@@ -78,11 +78,15 @@ git clone https://github.com/Rurutia-Artemis/RuruOS.git
 | [`docs/安装指南.md`](docs/安装指南.md) | 人类手动安装路线，常见问题 |
 | [`docs/接入AI指南.md`](docs/接入AI指南.md) | 哪些功能免费、哪些烧 AI 额度；四种智能体的接法 |
 | [`docs/自定义指南.md`](docs/自定义指南.md) | 换天气城市、换句库、换徽记、开项目卡 |
+| [`docs/秘书指南.md`](docs/秘书指南.md) | 教你的 Agent 当私人秘书的总纲：一句话上岗、六大职责场景表 |
 | [`docs/记账指南.md`](docs/记账指南.md) | 写给 Agent 的记账手册：schema、呈现契约、常见任务菜谱 |
+| [`CHANGELOG.md`](CHANGELOG.md) | 版本更新日志（当前 v1.0.8） |
 | [`给智能体的说明书.md`](给智能体的说明书.md) | 复制给任何聊天机器人，它就懂怎么往库里写东西 |
 | [`AGENTS.md`](AGENTS.md) | 写入规范的唯一权威（目录职责 + 全部 schema） |
 | [`DESIGN.md`](DESIGN.md) | 糖霜设计宪法：色板、组件铁律、禁止清单 |
 | [`90-System/开发交接-HANDOFF.md`](90-System/开发交接-HANDOFF.md) | 二次开发交接：架构、约定、几十轮迭代的踩坑史 |
+
+随库还分发两个 Agent skill（在 `.claude/skills/`，Claude Code 自动可用，其他 Agent 喂 SKILL.md 即可）：**tangshuang**（糖霜网页风格规范）和 **wechat-article-obsidian-layout**（公众号文章入库与排版：图片本地化、富排版、去广告、回读验证）。
 
 <img src="https://raw.githubusercontent.com/Rurutia-Artemis/RuruOS/main/docs/assets/sec-style.svg" alt="关于风格" width="100%">
 

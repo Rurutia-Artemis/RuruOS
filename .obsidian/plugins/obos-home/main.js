@@ -1638,6 +1638,7 @@ class ObosHomeView extends ItemView {
     const root = this.contentEl;
     const oldScroll = root.querySelector('.obos-scroll');
     this._keepScroll = oldScroll ? oldScroll.scrollTop : 0;
+    const flip = this.captureRows(root); /* v8.2 重渲染前记录各行位置 */
     /* 进场动画只在第一次渲染播放，之后的数据刷新静默重绘 */
     root.toggleClass('obos-still', !!this.hasRendered);
     this.hasRendered = true;
@@ -1668,6 +1669,53 @@ class ObosHomeView extends ItemView {
     this.renderArticles(split, articles);
     this.renderKnowledge(split);
     scroll.scrollTop = this._keepScroll || 0;
+    this.playRows(root, flip); /* v8.2 同 key 行从旧位置滑到新位置 */
+  }
+
+  /* ===== v8.2 行增删丝滑三件套 =====
+     进场：新建的行标 data-fk 进 _enterPaths，渲染时挂 obos-row-enter 浮入；
+     退场：leaveRow 先就地折叠（高度→0，下方内容随之平滑上移），动画完再写数据——
+       重渲染时行早已不占位，不会瞬跳；
+     FLIP：重渲染前后位置变了的行（新增把兄弟推开、恢复/排序变化）从旧位置滑到新位置。
+     三者都尊重 prefers-reduced-motion。 */
+  captureRows(root) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return null;
+    const map = new Map();
+    for (const el of root.querySelectorAll('[data-fk]')) map.set(el.dataset.fk, el.getBoundingClientRect().top);
+    return map.size ? map : null;
+  }
+
+  playRows(root, prev) {
+    if (!prev || !root.isConnected) return;
+    for (const el of root.querySelectorAll('[data-fk]')) {
+      const was = prev.get(el.dataset.fk);
+      if (was === undefined) continue;
+      const dy = was - el.getBoundingClientRect().top;
+      if (Math.abs(dy) < 3) continue;
+      el.animate(
+        [{ transform: `translateY(${dy}px)` }, { transform: 'none' }],
+        { duration: 300, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+      );
+    }
+  }
+
+  leaveRow(row, write) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { write(); return; }
+    row.style.height = row.offsetHeight + 'px';
+    void row.offsetHeight; /* 定格起始高度，让过渡有起点 */
+    row.addClass('obos-row-leaving');
+    row.style.height = '0px';
+    window.setTimeout(write, 300);
+  }
+
+  /* 新建条目登记：下一次渲染时该行播放进场动画 */
+  markEnter(path) {
+    (this._enterPaths || (this._enterPaths = new Set())).add(path);
+  }
+
+  enterCheck(row, path) {
+    row.setAttr('data-fk', path);
+    if (this._enterPaths && this._enterPaths.delete(path)) row.addClass('obos-row-enter');
   }
 
   renderCalendar(grid, events) {
@@ -1712,6 +1760,7 @@ class ObosHomeView extends ItemView {
         list.createDiv({ cls: `obos-cal-day ${day === today ? 'is-today' : ''}`, text: dayLabel(day) });
       }
       const row = list.createDiv({ cls: 'obos-cal-event', attr: { tabindex: '0', role: 'button', title: '点击编辑' } });
+      this.enterCheck(row, e.file.path);
       const edit = () => { this.editingEvent = e.file.path; this.addingEvent = false; this.render(); };
       row.onclick = edit;
       row.onkeydown = ev => { if (ev.key === 'Enter') edit(); };
@@ -1724,10 +1773,9 @@ class ObosHomeView extends ItemView {
       if (e.fm.location) sub.push(String(e.fm.location));
       if (sub.length) bodyEl.createDiv({ cls: 'obos-cal-sub', text: sub.join(' · ') });
       const del = row.createEl('button', { cls: 'obos-row-del', text: '×', attr: { 'aria-label': '删除日程' } });
-      del.onclick = async ev => {
+      del.onclick = ev => {
         ev.stopPropagation();
-        await this.app.vault.trash(e.file, true);
-        new Notice('已删除日程');
+        this.leaveRow(row, async () => { await this.app.vault.trash(e.file, true); new Notice('已删除日程'); });
       };
     }
   }
@@ -1777,6 +1825,7 @@ class ObosHomeView extends ItemView {
       if (this.editingEvent === e.file.path) { this.renderEventEditor(dayList, e); continue; }
       const s = String(e.fm.start || '');
       const row = dayList.createDiv({ cls: 'obos-cal-event', attr: { tabindex: '0', role: 'button', title: '点击编辑' } });
+      this.enterCheck(row, e.file.path);
       const edit = () => { this.editingEvent = e.file.path; this.addingEvent = false; this.render(); };
       row.onclick = edit;
       row.onkeydown = ev2 => { if (ev2.key === 'Enter') edit(); };
@@ -1784,7 +1833,7 @@ class ObosHomeView extends ItemView {
       const bodyEl = row.createDiv({ cls: 'obos-cal-body' });
       bodyEl.createDiv({ cls: 'obos-cal-title', text: e.fm.title || e.file.basename });
       const del = row.createEl('button', { cls: 'obos-row-del', text: '×', attr: { 'aria-label': '删除日程' } });
-      del.onclick = async ev2 => { ev2.stopPropagation(); await this.app.vault.trash(e.file, true); new Notice('已删除日程'); };
+      del.onclick = ev2 => { ev2.stopPropagation(); this.leaveRow(row, async () => { await this.app.vault.trash(e.file, true); new Notice('已删除日程'); }); };
     }
   }
 
@@ -1819,6 +1868,7 @@ class ObosHomeView extends ItemView {
       } else {
         const path = `${FOLDERS.calendar}/${sanitizeFilename(name)}.md`;
         if (this.app.vault.getAbstractFileByPath(path)) { new Notice('同名日程已存在'); return; }
+        this.markEnter(path); /* v8.2 下次渲染这行浮入 */
         await this.app.vault.create(path,
           `---\ntype: event\ntitle: "${name.replace(/"/g, '')}"\nstart: ${startVal}\nend: ${endVal}\nlocation: ""\ncalendar_id: ""\nadded: ${todayStr()}\n---\n`);
         new Notice('已创建日程');
@@ -2314,15 +2364,16 @@ class ObosHomeView extends ItemView {
       if (!doneTasks.length) list.createDiv({ cls: 'obos-empty', text: '还没有已完成的待办。' });
       for (const dt of doneTasks) {
         const row = list.createDiv({ cls: 'obos-task' });
+        this.enterCheck(row, dt.file.path);
         const box = row.createDiv({ cls: 'obos-check obos-check-on', attr: { role: 'checkbox', 'aria-checked': 'true', tabindex: '0', title: '点一下恢复为进行中' } });
         box.innerHTML = '<svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="#1e4736" stroke-width="2.4" stroke-linecap="round"><path d="M2 6.2 L4.8 9 L10 3.4"/></svg>';
-        box.onclick = async () => { await this.setProp(dt.file, fm => { fm.done = false; fm.done_at = ''; }); };
+        box.onclick = () => this.leaveRow(row, async () => { await this.setProp(dt.file, fm => { fm.done = false; fm.done_at = ''; }); });
         const dbody = row.createDiv({ cls: 'obos-task-body' });
         dbody.createDiv({ cls: 'obos-task-title obos-done-line', text: dt.fm.title || dt.file.basename });
         const dmeta = row.createDiv({ cls: 'obos-task-meta' });
         if (dt.fm.due) dmeta.createSpan({ cls: 'obos-due', text: String(dt.fm.due).slice(5).replace('-', '/') });
         const ddel = row.createEl('button', { cls: 'obos-row-del', text: '×', attr: { 'aria-label': '删除' } });
-        ddel.onclick = async e => { e.stopPropagation(); await this.app.vault.trash(dt.file, true); new Notice('已删除'); };
+        ddel.onclick = e => { e.stopPropagation(); this.leaveRow(row, async () => { await this.app.vault.trash(dt.file, true); new Notice('已删除'); }); };
       }
       return;
     }
@@ -2330,6 +2381,7 @@ class ObosHomeView extends ItemView {
     for (const t of open) {
       if (this.editingTask === t.file.path) { this.renderTaskEditor(list, t); continue; }
       const row = list.createDiv({ cls: 'obos-task' });
+      this.enterCheck(row, t.file.path);
       const box = row.createDiv({ cls: 'obos-check', attr: { role: 'checkbox', 'aria-checked': 'false', tabindex: '0' } });
       box.innerHTML = checkSVG();
       const complete = async () => {
@@ -2347,7 +2399,10 @@ class ObosHomeView extends ItemView {
           }
         }
         row.addClass('obos-task-done');
-        window.setTimeout(async () => { await this.setProp(t.file, fm => { fm.done = true; fm.done_at = todayStr(); }); }, 420);
+        /* v8.2 时序：0-400ms 打勾+彩屑+划线右滑淡出 → 接着行折叠（下方内容平滑上移）→ 写数据 */
+        window.setTimeout(() => {
+          this.leaveRow(row, async () => { await this.setProp(t.file, fm => { fm.done = true; fm.done_at = todayStr(); }); });
+        }, 400);
       };
       box.onclick = complete;
       box.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); complete(); } };
@@ -2361,10 +2416,9 @@ class ObosHomeView extends ItemView {
       if (dl) meta.createSpan({ cls: `obos-due ${dl.cls}`, text: dl.text });
       if (t.fm.priority === '高') meta.createSpan({ cls: 'obos-pri-high', text: '高' });
       const del = row.createEl('button', { cls: 'obos-row-del', text: '×', attr: { 'aria-label': '删除待办' } });
-      del.onclick = async e => {
+      del.onclick = e => {
         e.stopPropagation();
-        await this.app.vault.trash(t.file, true);
-        new Notice('已删除待办');
+        this.leaveRow(row, async () => { await this.app.vault.trash(t.file, true); new Notice('已删除待办'); });
       };
     }
 
@@ -2379,6 +2433,7 @@ class ObosHomeView extends ItemView {
       const path = `${FOLDERS.tasks}/${sanitizeFilename(title)}.md`;
       if (this.app.vault.getAbstractFileByPath(path)) { new Notice('同名待办已存在'); return; }
       input.value = '';
+      this.markEnter(path); /* v8.2 下次渲染这行浮入 */
       await this.app.vault.create(path,
         `---\ntype: task\ntitle: "${title.replace(/"/g, '')}"\ndue: ${dueIn.value || ''}\ndone: false\npriority: 中\nkind: ${kindPick.value()}\nreminder_id: ""\nadded: ${todayStr()}\n---\n`);
       new Notice('已创建待办');
@@ -2577,6 +2632,7 @@ class ObosHomeView extends ItemView {
 
     for (const a of shown) {
       const row = list.createDiv({ cls: 'obos-art' });
+      this.enterCheck(row, a.file.path);
       const cat = a.fm.category || '其他';
       const tag = row.createDiv({ cls: 'obos-art-cat', text: cat });
       tag.style.setProperty('--chip', catColor(cat));
@@ -2590,21 +2646,20 @@ class ObosHomeView extends ItemView {
 
       if (this.articleTab === 'unread') {
         const btn = row.createEl('button', { cls: 'obos-read-btn', text: '标记已读' });
-        btn.onclick = async e => {
+        btn.onclick = e => {
           e.stopPropagation();
           row.addClass('obos-art-fade');
-          window.setTimeout(async () => {
-            await this.setProp(a.file, fm => { fm.status = 'read'; fm.read_at = todayStr(); });
-          }, 380);
+          window.setTimeout(() => {
+            this.leaveRow(row, async () => { await this.setProp(a.file, fm => { fm.status = 'read'; fm.read_at = todayStr(); }); });
+          }, 360);
         };
       } else {
         row.createDiv({ cls: 'obos-art-readat', text: String(a.fm.read_at || '').slice(5) });
       }
       const del = row.createEl('button', { cls: 'obos-row-del', text: '×', attr: { 'aria-label': '废弃文章' } });
-      del.onclick = async e => {
+      del.onclick = e => {
         e.stopPropagation();
-        await this.app.vault.trash(a.file, true);
-        new Notice('文章已废弃');
+        this.leaveRow(row, async () => { await this.app.vault.trash(a.file, true); new Notice('文章已废弃'); });
       };
     }
   }
