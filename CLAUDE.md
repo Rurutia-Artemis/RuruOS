@@ -8,7 +8,7 @@
 
 ## 知识库地图（给所有在本库工作的 AI）
 
-- `20-Reading/Articles/`：抓取的文章（frontmatter: status=unread/read，category 分类，distilled 标记是否已浓缩）
+- `20-Reading/Articles/`：抓取的文章（frontmatter: status=unread/read，category 分类，distilled=已浓缩，starred=用户珍藏永久保留）
 - `30-Media/Dramas|Posters/`：剧集与海报，status 五态
 - `40-Life/Tasks|Calendar|Finance/`：待办、日程、账本（ledger 带 total/currency，流水进 流水/）
 - `50-Knowledge/`：第二大脑，固定 8 个主题目录（AI与Coding/商业与变现/设计与审美/游戏设计/社媒观察/工具观察/视频知识/文档与方案），浓缩笔记按 category 落对应目录

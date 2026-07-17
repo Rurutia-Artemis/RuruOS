@@ -7,7 +7,6 @@
 const { Plugin, ItemView, Notice, TFile, debounce, MarkdownRenderer, requestUrl, addIcon } = require('obsidian');
 const nodeFs = require('fs');
 const nodePath = require('path');
-const { spawn } = require('child_process');
 
 const VIEW_HOME = 'obos-home-view';
 const VIEW_READER = 'obos-reader-view';
@@ -159,8 +158,24 @@ const FX_DEFAULT = { mode: 'sakura', speed: 1, count: 1, size: 1, angle: 10, sat
 const FX_MODES = [['none', '无'], ['sakura', '樱花'], ['rain', '细雨'], ['snow', '落雪'], ['fly', '萤火']];
 
 /* ---------- AI 后台任务 Prompt（逐字，来自任务规范） ---------- */
-const DISTILL_PROMPT = `你在 RuruOS vault 中执行"已读文章浓缩"任务。规则：1. 扫描 20-Reading/Articles/ 下 frontmatter 满足 status: read 且没有 distilled: true 的文章。2. 每篇生成一份要点浓缩笔记写入 50-Knowledge 对应主题目录：ai-coding→AI与Coding/，商业变现→商业与变现/，设计→设计与审美/，生活或其他→文档与方案/；剧集推荐类跳过（观影管线已处理）。3. 浓缩笔记文件名：<原标题前30字>-浓缩-<今日日期>.md，frontmatter 含 type: distilled_note、title、source: "[[原文件名]]"、category、added。正文 5-10 条要点，保留关键数字与结论。4. 完成后给原文章 frontmatter 加一行 distilled: true，其他不动。5. 顺手维护索引：若目标主题目录有 _index.md 或索引/MOC 笔记，把新浓缩笔记补进去；浓缩笔记正文底部用 [[wikilink]] 关联库内相关笔记。6. 遵守 vault 根目录 AGENTS.md 写入规范。最后输出一行总结。`;
-const CLEAN_PROMPT = `你在 RuruOS vault 中执行"文章清杂"任务，找出 20-Reading/Articles/ 里 TTS/转写导入的垃圾文章。判定（满足其一）：乱码字符占比明显、大段无意义重复、正文残缺不足200字且无信息量、纯广告导流。处理：1. 确认垃圾→移入 vault 根目录 .trash/（没有就创建），绝不永久删除。2. 拿不准→只加 frontmatter needs_review: true。3. 正常文章一字不动。4. 最后输出一行总结：移了几篇（列名）、标了几篇。`;
+/* 浓缩规则（单篇自动浓缩与「整理」共用）：skill 聚合去重、笔记自成一体、非珍藏原文归档 .trash/ */
+const DISTILL_RULES = `浓缩规则：
+a. 文章主要在介绍某个 AI skill／工具用法（安装、prompt、工作流）→ 走 skill 档案：在 50-Knowledge/AI与Coding/Skill档案/ 下找该 skill 的档案（文件名 Skill-<名称>.md，frontmatter 含 type: skill_note、title、added）。已有→把本文新增要点合并进对应小节，重复内容不写，简介有更新就改；没有→新建，开头一段简介说明这个 skill 是干什么用的、什么时候用，再分节记要点。介绍同一个 skill 的多篇文章永远只维护这一份档案，绝不新开第二份。
+b. 其他文章→在 50-Knowledge 对应主题目录新建浓缩笔记，文件名 <原标题前30字>-浓缩-<今日日期>.md，frontmatter 含 type: distilled_note、title、source_url（照抄原文 frontmatter 的 source_url）、category、added。主题映射：设计/配色→设计与审美，AI/编程→AI与Coding，商业变现→商业与变现，工具→工具观察，社媒→社媒观察，视频→视频知识，游戏→游戏设计，其余→文档与方案。
+c. 剧集/观影推荐类不建浓缩笔记（观影管线已处理），直接做 d、e 两步。
+d. 浓缩笔记必须自成一体：5-10 条要点保留关键数字与结论，值得留档的原文段落用引用格式节选进来；出处只写 URL，不要用 [[wikilink]] 指向原文（原文会被归档）。写完给原文章 frontmatter 加 distilled: true。
+e. 归档：原文章 frontmatter 没有 starred: true → 把原文件移入 vault 根目录 .trash/（没有就创建），绝不永久删除；有 starred: true → 原文留在原处不动。
+全程遵守 vault 根目录 AGENTS.md 写入规范。`;
+const distillOnePrompt = (path) => `你在 RuruOS vault 中执行"单篇文章浓缩归档"，目标文件：${path}。先读原文；frontmatter 已有 distilled: true 就输出"已浓缩过，跳过"直接结束，否则按浓缩规则处理。
+${DISTILL_RULES}
+最后输出一行 30 字内总结：浓缩到了哪、原文归档与否。`;
+const TIDY_PROMPT = `你在 RuruOS vault 中执行"知识库整理"，按序做四件事：
+1. 补漏：扫描 20-Reading/Articles/ 里 status: read 且没有 distilled: true 的文章，逐篇按浓缩规则处理。
+2. 清尾：Articles/ 里 status: read、distilled: true 且没有 starred: true 的文章，直接移入 .trash/。
+3. Skill 档案体检：50-Knowledge/AI与Coding/Skill档案/ 里同一个 skill 出现多份档案就合并成一份并去重；每份档案开头必须有简介段（这个 skill 干什么用、什么时候用），缺就补写。
+4. 归位：50-Knowledge/ 下出现 8 个主题目录（AI与Coding/商业与变现/设计与审美/游戏设计/社媒观察/工具观察/视频知识/文档与方案）之外的目录或散落笔记时，按内容归入对应主题目录；确认重复的副本移入 .trash/；主题目录 _index.md 有过时条目就修正。
+${DISTILL_RULES}
+最后输出一行 40 字内总结：补浓缩几篇、清尾几篇、合并几份档案、归位几件。`;
 
 /* ---------- 手绘 SVG 图标（原样照抄蓝本 path） ---------- */
 const STAR_PATH = 'M12 2.6 L14.9 8.7 L21.5 9.6 L16.7 14.2 L17.9 20.8 L12 17.6 L6.1 20.8 L7.3 14.2 L2.5 9.6 L9.1 8.7 Z';
@@ -779,18 +794,51 @@ class ObosReaderView extends ItemView {
         new Notice('文章已废弃');
         this.plugin.activateHome();
       };
-      const readBtn = bar.createEl('button', {
-        cls: `obos-read-toggle ${isRead ? 'is-read' : ''}`,
-        text: isRead ? '✓ 已读' : '标记已读',
+      /* 已读/珍藏按钮状态本地跟踪 + 就地重绘：
+         写完 frontmatter 立刻 this.render() 会读到滞后的 metadataCache 旧值——按钮看着没反应，
+         再点一下实际是把文件又翻回去（v8.4c 实锤 bug）。改为：界面先响应，写盘用显式值不做文件态翻转。 */
+      let readState = isRead;
+      let starState = !!fm.starred;
+      const readBtn = bar.createEl('button', { cls: 'obos-read-toggle', text: '' });
+      const starBtn = bar.createEl('button', {
+        cls: 'obos-star-toggle', text: '',
+        attr: { title: '珍藏的文章永久保留，不参与自动清除' },
       });
+      const paint = () => {
+        readBtn.setText(readState ? '✓ 已读' : '标记已读');
+        readBtn.toggleClass('is-read', readState);
+        starBtn.setText(starState ? '★ 已珍藏' : '☆ 珍藏');
+        starBtn.toggleClass('is-starred', starState);
+      };
+      paint();
       readBtn.onclick = async () => {
+        readState = !readState;
+        paint();
         await this.setProp(file, f => {
-          if (f.status === 'read') { f.status = 'unread'; f.read_at = ''; }
-          else { f.status = 'read'; f.read_at = todayStr(); }
+          if (readState) { f.status = 'read'; f.read_at = todayStr(); }
+          else { f.status = 'unread'; f.read_at = ''; }
         });
-        /* 标成已读时清掉阅读位置，下次重读从头开始 */
-        if (!isRead) { try { window.localStorage.removeItem(READPOS_PREFIX + file.path); } catch (e) {} }
-        this.render();
+        /* 标成已读：清阅读位置（下次重读从头来）+ 排队自动浓缩归档 */
+        if (readState) {
+          try { window.localStorage.removeItem(READPOS_PREFIX + file.path); } catch (e) {}
+          this.plugin.queueDistill(file.path);
+        }
+      };
+      starBtn.onclick = async () => {
+        starState = !starState;
+        if (starState && !readState) readState = true; /* 珍藏隐含已读 */
+        paint();
+        await this.setProp(file, f => {
+          if (starState) {
+            f.starred = true;
+            f.status = 'read';
+            if (!f.read_at) f.read_at = todayStr();
+          } else { delete f.starred; }
+        });
+        if (starState) {
+          new Notice('已珍藏，这篇永久保留');
+          this.plugin.queueDistill(file.path);
+        }
       };
     }
 
@@ -1583,9 +1631,12 @@ class ObosHomeView extends ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.plugin = plugin;
-    this.dramaTab = '待定';
+    this.dramaTab = '在追';
     this.articleTab = 'unread';
     this.articleCat = 'all';
+    this.articlePage = 0;
+    this.knowCat = 'all';
+    this.knowPage = 0;
     this.editingTask = null;
     this.editingEvent = null;
     this.addingEvent = false;
@@ -1593,7 +1644,7 @@ class ObosHomeView extends ItemView {
     this.calMode = 'list';
     this.calCursor = null;
     this.calSelected = null;
-    this.aiBusy = { distill: false, clean: false };
+    this.aiBusy = { tidy: false };
     this.refresh = debounce(() => { if (this.editingTask || this.editingEvent || this.addingEvent) return; this.render(); }, 250, true);
   }
 
@@ -1660,12 +1711,15 @@ class ObosHomeView extends ItemView {
 
     this.renderHeader(scroll, { tasks, events, articles, dramas });
     this.renderDramas(scroll, dramas);
-    const grid = scroll.createDiv({ cls: 'obos-grid' });
+    /* v8.4 B案玻璃托盘：两组视觉容器，组内卡片保持独立（用户拍板 B + H2） */
+    const grp1 = this.groupTray(scroll, '日常管理', CANDY.butter, '待办 · 日历 · 项目 · 账目', 'daily');
+    const grid = grp1.createDiv({ cls: 'obos-grid' });
     this.renderTasks(grid, tasks);
     this.renderCalendar(grid, events);
     this.renderProjects(grid);
     this.renderFinance(grid);
-    const split = scroll.createDiv({ cls: 'obos-row-split' });
+    const grp2 = this.groupTray(scroll, '阅读与知识', CANDY.berry, '待读文章 · 知识沉淀', 'reading');
+    const split = grp2.createDiv({ cls: 'obos-row-split' });
     this.renderArticles(split, articles);
     this.renderKnowledge(split);
     scroll.scrollTop = this._keepScroll || 0;
@@ -1744,6 +1798,7 @@ class ObosHomeView extends ItemView {
     addBtn.onclick = () => { this.addingEvent = true; this.editingEvent = null; this.render(); };
 
     const list = card.createDiv({ cls: 'obos-cal-list' });
+    list.addClass('obos-hbody');
     if (this.addingEvent) this.renderEventEditor(list, null);
     if (this.calMode === 'month') { this.renderCalMonth(list, events); return; }
     if (!upcoming.length && !this.addingEvent) {
@@ -2442,6 +2497,7 @@ class ObosHomeView extends ItemView {
     const addBtn = addWrap.createEl('button', { cls: 'obos-jelly obos-jc-mint obos-ai-btn', text: '添加' });
     addBtn.onclick = createTask;
     if (doneCount) card.createDiv({ cls: 'obos-done-note', text: `已完成 ${doneCount} 项` });
+    list.addClass('obos-hbody');
   }
 
   renderTaskEditor(list, t) {
@@ -2487,6 +2543,7 @@ class ObosHomeView extends ItemView {
       body.createDiv({ cls: 'obos-proj-meta', text: `${mtimeMMDD(p.latestMtime)} · ${p.files.length} 份 md` });
       row.createDiv({ cls: 'obos-proj-arrow', text: '›' });
     }
+    list.addClass('obos-hbody');
   }
 
   renderFinance(grid) {
@@ -2527,57 +2584,82 @@ class ObosHomeView extends ItemView {
         requestAnimationFrame(() => requestAnimationFrame(() => { seg.style.width = `${(v / posSum) * 100}%`; }));
       });
     }
+    list.addClass('obos-hbody');
   }
 
-  async runClaudeTask(key, label, prompt) {
-    if (!AI) { new Notice(NO_AI_MSG, 9000); return; }
-    if (this.aiBusy[key]) return;
-    this.aiBusy[key] = true;
-    this.render();
-    new Notice(`已启动 AI 后台任务（引擎 ${AI.name}，通常 1-3 分钟），完成会弹提示`, 8000);
+  /* v8.4b B案玻璃托盘：组头（把手点 + 糖果点 + 组名 + 成员小字）+ 内容槽 +
+     组级软糖把手——整组只此一根，平时隐身，鼠标靠近托盘底缘才现身（用户拍板）；
+     拖动统一调组内全部卡列表高度（.obos-hbody 吃 --grp-h 变量，无闪帧），双击恢复自动。 */
+  groupTray(parent, name, color, sub, key) {
+    const tray = parent.createDiv({ cls: 'obos-grp' });
+    tray.style.setProperty('--gc', color);
+    const bar = tray.createDiv({ cls: 'obos-grp-bar' });
+    const grip = bar.createDiv({ cls: 'obos-grp-grip', attr: { 'aria-hidden': 'true' } });
+    for (let i = 0; i < 6; i++) grip.createSpan();
+    bar.createSpan({ cls: 'obos-grp-dot' });
+    bar.createSpan({ cls: 'obos-grp-name', text: name });
+    bar.createSpan({ cls: 'obos-grp-sub', text: sub });
 
-    const basePath = this.app.vault.adapter.basePath;
-    const env = Object.assign({}, process.env, {
-      PATH: `${process.env.PATH || ''}:${require('os').homedir()}/.local/bin:/opt/homebrew/bin:/usr/local/bin`,
-    });
-
-    const finish = () => { this.aiBusy[key] = false; this.render(); };
-
-    let child;
-    try {
-      child = spawn(AI.bin, AI.edit(prompt), {
-        cwd: basePath,
-        env,
-      });
-    } catch (e) {
-      new Notice(`${label}启动失败：${e.message}`);
-      console.error(e);
-      finish();
-      return;
-    }
-
-    let stdout = '';
-    let stderr = '';
-    child.stdout.on('data', d => { stdout += d.toString(); });
-    child.stderr.on('data', d => { stderr += d.toString(); });
-    child.on('error', err => {
-      new Notice(`${label}启动失败：${err.message}`);
-      console.error(err);
-      finish();
-    });
-    child.on('close', code => {
-      if (code === 0) {
-        const lines = stdout.trim().split('\n').filter(Boolean);
-        const msg = lines.length ? lines[lines.length - 1] : `${label}完成`;
-        this.aiLast = `✓ ${msg}`;
-        new Notice(msg, 12000);
+    const storeKey = 'obos-grp-h:' + key;
+    const setH = h => {
+      if (h) {
+        tray.style.setProperty('--grp-h', h + 'px');
+        tray.addClass('is-sized');
       } else {
-        this.aiLast = `✗ ${label}失败（退出码 ${code}），详情见控制台`;
-        new Notice(`${label}失败（退出码 ${code}），详情见控制台`, 12000);
-        console.error(stderr);
+        tray.style.removeProperty('--grp-h');
+        tray.removeClass('is-sized');
       }
-      finish();
+    };
+    setH(Number(window.localStorage.getItem(storeKey)) || 0);
+
+    const foot = tray.createDiv({ cls: 'obos-grp-foot' });
+    const grab = foot.createEl('button', { cls: 'obos-grp-grab', attr: { 'aria-label': '拖拽调整这组卡片的高度，双击恢复自动' } });
+    grab.createSpan();
+    /* 双击复位手动判定：pointerdown preventDefault 可能吞掉原生 dblclick，不赌 */
+    let lastDown = 0;
+    grab.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      const now = Date.now();
+      if (now - lastDown < 350) {
+        lastDown = 0;
+        setH(0);
+        try { window.localStorage.removeItem(storeKey); } catch (err) {}
+        return;
+      }
+      lastDown = now;
+      grab.setPointerCapture(e.pointerId);
+      const startY = e.clientY;
+      const first = tray.querySelector('.obos-hbody');
+      const startH = first ? first.offsetHeight : 300;
+      let h = startH;
+      const move = ev => {
+        h = Math.max(96, Math.min(760, startH + ev.clientY - startY));
+        setH(h);
+      };
+      const up = () => {
+        grab.removeEventListener('pointermove', move);
+        grab.removeEventListener('pointerup', up);
+        grab.removeEventListener('pointercancel', up);
+        try { window.localStorage.setItem(storeKey, String(h)); } catch (err) {}
+      };
+      grab.addEventListener('pointermove', move);
+      grab.addEventListener('pointerup', up);
+      grab.addEventListener('pointercancel', up);
     });
+    return tray;
+  }
+
+  /* 糖霜翻页：‹ 页码 › ，超过一页才由调用方挂上 */
+  pager(parent, page, total, color, onChange) {
+    const wrap = parent.createDiv({ cls: 'obos-pager' });
+    wrap.style.setProperty('--pc', color);
+    const prev = wrap.createEl('button', { cls: 'obos-pgbtn', text: '‹', attr: { 'aria-label': '上一页' } });
+    prev.disabled = page <= 0;
+    prev.onclick = () => onChange(page - 1);
+    wrap.createSpan({ cls: 'obos-pg-num', text: `${page + 1} / ${total}` });
+    const next = wrap.createEl('button', { cls: 'obos-pgbtn', text: '›', attr: { 'aria-label': '下一页' } });
+    next.disabled = page >= total - 1;
+    next.onclick = () => onChange(page + 1);
   }
 
   renderArticles(parent, articles) {
@@ -2589,26 +2671,31 @@ class ObosHomeView extends ItemView {
     const tabs = head.createDiv({ cls: 'obos-tabs' });
     const mkTab = (id, label) => {
       const b = tabs.createEl('button', { cls: `obos-tab ${this.articleTab === id ? 'on' : ''}`, text: label });
-      b.onclick = () => { this.articleTab = id; this.render(); };
+      b.onclick = () => { this.articleTab = id; this.articlePage = 0; this.render(); };
     };
     mkTab('unread', '待读');
     mkTab('read', '已读');
     tabs.children[0].style.setProperty('--pc', CANDY.berry);
     tabs.children[1].style.setProperty('--pc', CANDY.mint);
 
-    const distillBtn = head.createEl('button', {
+    /* 「整理」＝图书馆管理员：补漏浓缩 + 清尾 + skill 档案体检 + 散件归位；
+       走插件级 runClaude 队列，和已读自动浓缩串行，不会同时碰同一篇 */
+    const tidyBtn = head.createEl('button', {
       cls: 'obos-jelly obos-jc-taro obos-ai-btn',
-      text: this.aiBusy.distill ? 'AI 浓缩中…' : 'AI 浓缩',
+      text: this.aiBusy.tidy ? '整理中…' : '整理',
+      attr: { title: '补漏浓缩 · skill 档案去重 · 散件归位' },
     });
-    distillBtn.disabled = this.aiBusy.distill;
-    distillBtn.onclick = () => this.runClaudeTask('distill', 'AI 浓缩', DISTILL_PROMPT);
-
-    const cleanBtn = head.createEl('button', {
-      cls: 'obos-jelly obos-jc-peach obos-ai-btn',
-      text: this.aiBusy.clean ? 'AI 清杂中…' : 'AI 清杂',
-    });
-    cleanBtn.disabled = this.aiBusy.clean;
-    cleanBtn.onclick = () => this.runClaudeTask('clean', 'AI 清杂', CLEAN_PROMPT);
+    tidyBtn.disabled = this.aiBusy.tidy;
+    tidyBtn.onclick = () => {
+      if (this.aiBusy.tidy) return;
+      this.aiBusy.tidy = true;
+      this.plugin.runClaude('知识库整理', TIDY_PROMPT, (ok, msg) => {
+        this.aiBusy.tidy = false;
+        this.aiLast = (ok ? '✓ ' : '✗ ') + msg;
+        this.render();
+      });
+      this.render();
+    };
     if (this.aiLast) card.createDiv({ cls: 'obos-ai-status', text: this.aiLast });
 
     const pool = this.articleTab === 'unread' ? unread : read;
@@ -2621,7 +2708,7 @@ class ObosHomeView extends ItemView {
         text: c === 'all' ? `全部 ${n}` : `${c} ${n}`,
       });
       if (this.articleCat === c) chip.style.setProperty('--chip', catColor(c));
-      chip.onclick = () => { this.articleCat = c; this.render(); };
+      chip.onclick = () => { this.articleCat = c; this.articlePage = 0; this.render(); };
     }
 
     const list = card.createDiv({ cls: 'obos-art-list' });
@@ -2630,7 +2717,12 @@ class ObosHomeView extends ItemView {
       .sort((a, b) => String(b.fm.added || '').localeCompare(String(a.fm.added || '')));
     if (!shown.length) list.createDiv({ cls: 'obos-empty', text: this.articleTab === 'unread' ? '这个分类没有未读。' : '还没有已读记录。' });
 
-    for (const a of shown) {
+    /* 默认一页 15 篇，多出来的走翻页 */
+    const ART_PAGE = 15;
+    const artPages = Math.max(1, Math.ceil(shown.length / ART_PAGE));
+    this.articlePage = Math.min(this.articlePage, artPages - 1);
+
+    for (const a of shown.slice(this.articlePage * ART_PAGE, (this.articlePage + 1) * ART_PAGE)) {
       const row = list.createDiv({ cls: 'obos-art' });
       this.enterCheck(row, a.file.path);
       const cat = a.fm.category || '其他';
@@ -2650,10 +2742,15 @@ class ObosHomeView extends ItemView {
           e.stopPropagation();
           row.addClass('obos-art-fade');
           window.setTimeout(() => {
-            this.leaveRow(row, async () => { await this.setProp(a.file, fm => { fm.status = 'read'; fm.read_at = todayStr(); }); });
+            this.leaveRow(row, async () => {
+              await this.setProp(a.file, fm => { fm.status = 'read'; fm.read_at = todayStr(); });
+              /* 已读自动浓缩归档：后台排队跑，浓缩完非珍藏原文进 .trash/ */
+              this.plugin.queueDistill(a.file.path);
+            });
           }, 360);
         };
       } else {
+        if (a.fm.starred) row.createSpan({ cls: 'obos-art-star', text: '★', attr: { title: '已珍藏，永久保留' } });
         row.createDiv({ cls: 'obos-art-readat', text: String(a.fm.read_at || '').slice(5) });
       }
       const del = row.createEl('button', { cls: 'obos-row-del', text: '×', attr: { 'aria-label': '废弃文章' } });
@@ -2662,6 +2759,8 @@ class ObosHomeView extends ItemView {
         this.leaveRow(row, async () => { await this.app.vault.trash(a.file, true); new Notice('文章已废弃'); });
       };
     }
+    if (shown.length > ART_PAGE) this.pager(card, this.articlePage, artPages, CANDY.berry, p => { this.articlePage = p; this.render(); });
+    list.addClass('obos-hbody');
   }
 
   renderKnowledge(parent) {
@@ -2670,20 +2769,61 @@ class ObosHomeView extends ItemView {
       .filter(f => f.path.startsWith('50-Knowledge/') && !f.path.includes('/_') && !f.basename.startsWith('_'))
       .sort((a, b) => b.stat.mtime - a.stat.mtime);
     head.createSpan({ cls: 'obos-card-sub', text: `${notes.length} 篇` });
+
+    /* 四大类视图筛选（存储仍是 8 主题目录，这里只按目录/类型分组显示） */
+    const kindOf = f => {
+      if (f.path.includes('/Skill档案/') || this.app.metadataCache.getFileCache(f)?.frontmatter?.type === 'skill_note') return 'skill';
+      if (f.path.startsWith('50-Knowledge/设计与审美/')) return 'design';
+      if (f.path.startsWith('50-Knowledge/AI与Coding/') || f.path.startsWith('50-Knowledge/工具观察/')) return 'aitool';
+      return 'misc';
+    };
+    /* 珍藏书架：阅读器里点过「☆ 珍藏」的文章（还住在 Articles/，永不归档），从这里进 */
+    const starred = this.collect(FOLDERS.articles)
+      .filter(a => !!a.fm.starred)
+      .sort((a, b) => String(b.fm.read_at || b.fm.added || '').localeCompare(String(a.fm.read_at || a.fm.added || '')));
+
+    const KIND_DEFS = [
+      ['all', '全部', CANDY.sky], ['fav', '珍藏', CANDY.butter], ['design', '设计与配色', CANDY.berry],
+      ['skill', 'Skill', CANDY.taro], ['aitool', 'AI与工具', CANDY.mint], ['misc', '其他', CANDY.peach],
+    ];
+    const chips = card.createDiv({ cls: 'obos-chips' });
+    for (const [id, label, color] of KIND_DEFS) {
+      const n = id === 'all' ? notes.length : id === 'fav' ? starred.length : notes.filter(f => kindOf(f) === id).length;
+      const chip = chips.createEl('button', { cls: `obos-chip ${this.knowCat === id ? 'on' : ''}`, text: `${label} ${n}` });
+      if (this.knowCat === id) chip.style.setProperty('--chip', color);
+      chip.onclick = () => { this.knowCat = id; this.knowPage = 0; this.render(); };
+    }
+
+    /* 行描述统一两种来源：知识笔记（主题签+文件名+改动日）/ 珍藏文章（★签+标题+读毕日） */
+    const pool = this.knowCat === 'fav'
+      ? starred.map(a => ({ file: a.file, chipText: '★ 珍藏', chipColor: CANDY.butter, title: a.fm.title || a.file.basename, date: String(a.fm.read_at || a.fm.added || '').slice(5).replace('-', '/') }))
+      : (this.knowCat === 'all' ? notes : notes.filter(f => kindOf(f) === this.knowCat))
+        .map(f => {
+          const topic = f.path.split('/')[1] || '其他';
+          return { file: f, chipText: topic, chipColor: topicColor(topic), title: f.basename, date: new Date(f.stat.mtime).toISOString().slice(5, 10).replace('-', '/') };
+        });
     const list = card.createDiv({ cls: 'obos-know-list' });
-    if (!notes.length) { list.createDiv({ cls: 'obos-empty', text: '读完的文章提炼后会沉淀到这里。' }); return; }
-    for (const f of notes.slice(0, 8)) {
-      const topic = f.path.split('/')[1] || '其他';
+    list.addClass('obos-hbody');
+    if (!pool.length) {
+      list.createDiv({ cls: 'obos-empty', text: this.knowCat === 'fav' ? '阅读器里点「☆ 珍藏」的文章会住在这里，永久保留。' : '读完的文章提炼后会沉淀到这里。' });
+      return;
+    }
+    /* 一页 15 行与左侧待读文章对齐——拖高托盘时两卡填充节奏一致（8 行会剩一大截空白，用户点名过） */
+    const KNOW_PAGE = 15;
+    const knowPages = Math.max(1, Math.ceil(pool.length / KNOW_PAGE));
+    this.knowPage = Math.min(this.knowPage, knowPages - 1);
+    for (const it of pool.slice(this.knowPage * KNOW_PAGE, (this.knowPage + 1) * KNOW_PAGE)) {
       const row = list.createDiv({ cls: 'obos-know', attr: { tabindex: '0', role: 'button' } });
-      const open = () => this.openInView(VIEW_READER, f);
+      const open = () => this.openInView(VIEW_READER, it.file);
       row.onclick = open;
       row.onkeydown = e => { if (e.key === 'Enter') open(); };
-      const chip = row.createDiv({ cls: 'obos-art-cat', text: topic });
-      chip.style.setProperty('--chip', topicColor(topic));
+      const chip = row.createDiv({ cls: 'obos-art-cat', text: it.chipText });
+      chip.style.setProperty('--chip', it.chipColor);
       const body = row.createDiv({ cls: 'obos-know-body' });
-      body.createDiv({ cls: 'obos-know-title', text: f.basename });
-      row.createDiv({ cls: 'obos-know-date', text: new Date(f.stat.mtime).toISOString().slice(5, 10).replace('-', '/') });
+      body.createDiv({ cls: 'obos-know-title', text: it.title });
+      row.createDiv({ cls: 'obos-know-date', text: it.date });
     }
+    if (pool.length > KNOW_PAGE) this.pager(card, this.knowPage, knowPages, CANDY.sky, p => { this.knowPage = p; this.render(); });
   }
 
   renderDramas(root, dramas) {
@@ -3255,15 +3395,24 @@ module.exports = class ObosHomePlugin extends Plugin {
     });
   }
 
-  /* 通用后台 Claude 任务（搜评分等）；busy 时排队，跑完自动接续 */
-  runClaude(label, prompt) {
-    if (!AI) { new Notice(NO_AI_MSG, 9000); return; }
+  /* 已读/珍藏后的单篇自动浓缩归档：走 runClaude 队列串行；同一篇在跑或在排队就不重复 */
+  queueDistill(path) {
+    const label = `浓缩归档：${path.split('/').pop().replace(/\.md$/, '')}`;
+    if (this._claudeCurrent === label) return;
+    if (this._claudeQueue && this._claudeQueue.some(j => j[0] === label)) return;
+    this.runClaude(label, distillOnePrompt(path));
+  }
+
+  /* 通用后台 AI 任务（搜评分等）；busy 时排队，跑完自动接续；onDone(ok, 一行结果) 可选 */
+  runClaude(label, prompt, onDone) {
+    if (!AI) { new Notice(NO_AI_MSG, 9000); if (onDone) onDone(false, NO_AI_MSG); return; }
     if (this._claudeBusy) {
-      (this._claudeQueue = this._claudeQueue || []).push([label, prompt]);
-      new Notice(`已有 Claude 任务在跑，「${label}」已排队（第 ${this._claudeQueue.length} 位）`);
+      (this._claudeQueue = this._claudeQueue || []).push([label, prompt, onDone]);
+      new Notice(`已有 AI 任务在跑，「${label}」已排队（第 ${this._claudeQueue.length} 位）`);
       return;
     }
     this._claudeBusy = true;
+    this._claudeCurrent = label;
     new Notice(`已启动「${label}」后台任务（引擎 ${AI.name}，约 1-2 分钟）`, 6000);
     const { spawn } = require('child_process');
     const env = Object.assign({}, process.env, {
@@ -3280,18 +3429,27 @@ module.exports = class ObosHomePlugin extends Plugin {
     child.stderr.on('data', d => { err += d.toString(); });
     const nextInQueue = () => {
       const next = this._claudeQueue && this._claudeQueue.shift();
-      if (next) this.runClaude(next[0], next[1]);
+      if (next) this.runClaude(next[0], next[1], next[2]);
     };
-    child.on('error', e => { this._claudeBusy = false; new Notice(`${label}启动失败：${e.message}`, 8000); nextInQueue(); });
+    child.on('error', e => {
+      this._claudeBusy = false; this._claudeCurrent = null;
+      new Notice(`${label}启动失败：${e.message}`, 8000);
+      if (onDone) onDone(false, e.message);
+      nextInQueue();
+    });
     child.on('close', code => {
-      this._claudeBusy = false;
+      this._claudeBusy = false; this._claudeCurrent = null;
+      let msg;
       if (code === 0) {
         const ls = out.trim().split('\n').filter(Boolean);
-        new Notice(ls.length ? ls[ls.length - 1] : `${label}完成`, 12000);
+        msg = ls.length ? ls[ls.length - 1] : `${label}完成`;
+        new Notice(msg, 12000);
       } else {
-        new Notice(`${label}失败（退出码 ${code}），详情见控制台`, 10000);
+        msg = `${label}失败（退出码 ${code}），详情见控制台`;
+        new Notice(msg, 10000);
         console.error(err);
       }
+      if (onDone) onDone(code === 0, msg);
       nextInQueue();
     });
   }

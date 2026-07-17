@@ -494,6 +494,22 @@
 .obos-art:hover .obos-read-btn { opacity: 1; }
 .obos-read-btn:hover { transform: scale(1.08) rotate(-2deg); }
 .obos-ai-btn { font-size: 0.78em; padding: 8px 15px; }
+.obos-art-star { flex: none; color: var(--butter); font-size: 0.92em; text-shadow: 0 1px 4px color-mix(in srgb, var(--butter) 55%, transparent); }
+
+/* ===== 翻页（待读文章 / 知识沉淀共用）：糖霜底小药丸，选中组色 --pc ===== */
+.obos-pager { display: flex; align-items: center; justify-content: center; gap: 12px; padding-top: 12px; }
+.obos-pgbtn {
+  border: 1.5px solid color-mix(in srgb, var(--pc, var(--peach)) 45%, transparent);
+  background-color: color-mix(in srgb, var(--pc, var(--peach)) 14%, var(--frost));
+  color: var(--ink); cursor: pointer;
+  border-radius: 12px; width: 34px; height: 30px; line-height: 1;
+  font-size: 1.05em; font-weight: 800; font-family: var(--display);
+  transition: transform 0.18s var(--spring), background-color 0.18s ease;
+  display: inline-flex; align-items: center; justify-content: center; padding: 0;
+}
+.obos-pgbtn:hover:not(:disabled) { transform: translateY(-2px); background-color: color-mix(in srgb, var(--pc, var(--peach)) 30%, var(--frost)); }
+.obos-pgbtn:disabled { opacity: 0.35; cursor: default; }
+.obos-pg-num { font-size: 0.82em; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* ===== 空状态 ===== */
 .obos-empty { color: var(--muted); font-size: 0.86em; padding: 18px 4px; }
@@ -586,7 +602,7 @@
 .obos-reader-scroll { position: relative; z-index: 1; flex: 1; overflow-y: auto; }
 
 /* 阅读器顶栏按钮：果冻钮语义色（复用 --jc，obos-jc-* 修饰类可通用覆盖） */
-.obos-icon-btn, .obos-discard-btn, .obos-read-toggle {
+.obos-icon-btn, .obos-discard-btn, .obos-read-toggle, .obos-star-toggle {
   border: none; cursor: pointer;
   font-family: var(--display); font-weight: 800; font-size: 0.96em;
   color: var(--sticker-ink);
@@ -596,11 +612,13 @@
   transition: transform 0.15s var(--spring), box-shadow 0.15s ease;
   display: inline-flex; align-items: center; gap: 5px;
 }
-.obos-icon-btn:hover, .obos-discard-btn:hover, .obos-read-toggle:hover { transform: translateY(-2px); }
-.obos-icon-btn:active, .obos-discard-btn:active, .obos-read-toggle:active { transform: translateY(3px) scale(0.97); }
+.obos-icon-btn:hover, .obos-discard-btn:hover, .obos-read-toggle:hover, .obos-star-toggle:hover { transform: translateY(-2px); }
+.obos-icon-btn:active, .obos-discard-btn:active, .obos-read-toggle:active, .obos-star-toggle:active { transform: translateY(3px) scale(0.97); }
 .obos-discard-btn { --jc: var(--berry); }
 .obos-read-toggle { --jc: var(--mint); }
 .obos-read-toggle.is-read { opacity: 0.85; }
+.obos-star-toggle { --jc: var(--butter); }
+.obos-star-toggle.is-starred { opacity: 0.9; }
 
 /* ===== 正文排版（阅读 / 剧集 / 项目 / MD 预览 通用） ===== */
 .obos-reader-page, .obos-drama-page, .obos-ledger-page, .obos-proj-page { position: relative; z-index: 1; }
@@ -932,7 +950,7 @@
 .obos-chooser-label { font-size: 0.74em; color: var(--muted); margin-top: 7px; line-height: 1.4; }
 
 /* ===== 文字色护甲：压制应用主题对按钮文字的干扰 ===== */
-.obos-jelly, .obos-icon-btn, .obos-discard-btn, .obos-read-toggle,
+.obos-jelly, .obos-icon-btn, .obos-discard-btn, .obos-read-toggle, .obos-star-toggle,
 .obos-mini-btn.save, .obos-kind-opt.on, .obos-read-btn, .obos-plus,
 .obos-tab.on, .obos-chip.on, .obos-art-cat, .obos-kind, .obos-d-chip,
 .obos-poster-triage, .obos-ledger-badge, .obos-mdprev-badge,
@@ -943,7 +961,7 @@
 .obos-kind-opt { color: var(--muted) !important; }
 .obos-kind-opt.on { color: var(--sticker-ink) !important; }
 .obos-tab { color: var(--muted) !important; }
-.obos-dp-day, .obos-dp-nav { color: var(--ink) !important; }
+.obos-dp-day, .obos-dp-nav, .obos-pgbtn { color: var(--ink) !important; }
 .obos-step { color: var(--sticker-ink) !important; }
 .obos-theme-dark .obos-step { color: #f6eefa !important; }
 
@@ -1395,7 +1413,7 @@
 .obos-tab:hover { background: color-mix(in srgb, var(--pc, var(--peach)) 28%, var(--frost)); }
 .obos-chip, .obos-kind-opt { border-radius: 12px; }
 .obos-jelly { padding: 13px 26px; font-size: 1.03em; border-radius: 16px; }
-.obos-icon-btn, .obos-discard-btn, .obos-read-toggle { padding: 13px 26px; font-size: 1.02em; }
+.obos-icon-btn, .obos-discard-btn, .obos-read-toggle, .obos-star-toggle { padding: 13px 26px; font-size: 1.02em; }
 
 /* 顶栏方章钮：54px 圆角方章，一钮一色（--bc 传） */
 .obos-round {
@@ -1846,6 +1864,8 @@
 .obos-dp-nav:hover { background-color: var(--berry) !important; }
 .obos-read-btn { background-color: var(--mint) !important; }
 .obos-plus { background-color: var(--mint) !important; }
+.obos-pgbtn { background-color: color-mix(in srgb, var(--pc, var(--peach)) 14%, var(--frost)) !important; }
+.obos-pgbtn:hover:not(:disabled) { background-color: color-mix(in srgb, var(--pc, var(--peach)) 30%, var(--frost)) !important; }
 
 /* ===== v8.1：问候小字行永不折行 =====
    greetRow 里金句 flex:1 抢空间，长句会把问候列挤窄、小字行被压成两行（用户多机复现）。
@@ -1958,4 +1978,68 @@ body.obos-zen .workspace-split.mod-right-split { display: none !important; }
   padding-top: 0 !important; padding-bottom: 0 !important;
   margin-top: 0 !important; margin-bottom: 0 !important;
   border-bottom-width: 0 !important;
+}
+
+/* ===== v8.4：B案玻璃托盘分组 + H2 软糖把手 + 内滚动条糖霜统一（用户拍板 B + H2）===== */
+.obos-grp {
+  position: relative;
+  background: color-mix(in srgb, var(--card) 52%, transparent);
+  border: 1.5px solid var(--card-bd); border-radius: 32px;
+  padding: 14px 16px 16px; margin-bottom: 22px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+/* 组级统一高度：拖把手时 --grp-h 落在托盘上，组内全部列表一起吃 */
+.obos-grp.is-sized .obos-hbody { height: var(--grp-h); }
+.obos-grp > .obos-grid, .obos-grp > .obos-row-split { margin-bottom: 0; }
+.obos-grp-bar { display: flex; align-items: center; gap: 10px; padding: 2px 6px 12px; }
+.obos-grp-grip { display: inline-grid; grid-template-columns: repeat(2, 5px); gap: 3px; padding: 4px; }
+.obos-grp-grip span { width: 5px; height: 5px; border-radius: 50%; background: color-mix(in srgb, var(--gc, var(--peach)) 70%, var(--ink)); opacity: 0.55; }
+.obos-grp-dot { width: 13px; height: 13px; border-radius: 50%; background: linear-gradient(180deg, color-mix(in srgb, var(--gc, var(--peach)) 80%, #fff), var(--gc, var(--peach))); box-shadow: 0 2px 5px color-mix(in srgb, var(--gc, var(--peach)) 50%, transparent); }
+.obos-grp-name { font-family: var(--display); font-weight: 800; font-size: 1.02em; }
+.obos-grp-sub { margin-left: auto; font-size: 0.76em; font-weight: 800; color: var(--muted); }
+
+/* H2 软糖把手（v8.4b 组级单把手）：整组一根，藏在托盘底缘，鼠标滑到底部才现身；
+   拖动统一调组内全部卡列表高度，双击恢复自动。 */
+.obos-hbody { overflow-y: auto; scrollbar-gutter: stable; min-height: 0; }
+.obos-grp-foot {
+  position: absolute; left: 0; right: 0; bottom: -10px; height: 32px;
+  display: grid; place-items: center; z-index: 5;
+}
+.obos-grp-grab {
+  display: grid; place-items: center;
+  width: 74px; height: 15px; padding: 0; border: none; border-radius: 999px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gc, var(--butter)) 84%, #fff), var(--gc, var(--butter)));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 0 color-mix(in srgb, var(--gc, var(--butter)) 56%, #6a4a30), 0 4px 10px color-mix(in srgb, var(--gc, var(--butter)) 40%, transparent);
+  cursor: ns-resize; touch-action: none;
+  opacity: 0; pointer-events: none; transform: translateY(5px);
+  transition: opacity 0.2s ease, transform 0.22s var(--spring);
+}
+.obos-grp-foot:hover .obos-grp-grab, .obos-grp-grab:active, .obos-grp-grab:focus-visible {
+  opacity: 1; pointer-events: auto; transform: none;
+}
+.obos-grp-grab span { width: 26px; height: 3px; border-radius: 3px; background: color-mix(in srgb, var(--gc, var(--butter)) 40%, var(--sticker)); opacity: 0.65; }
+
+/* 内滚动区滚动条全部并入糖霜族：卡内列表/弹层/选季网格/日期面板等一律糖果渐变细圆条。
+   主滚（.obos-scroll/.obos-reader-scroll，11px 防抖约定）与追剧墙横条（berry 单色）维持 v8.1d 原样，显式排除。 */
+.obos-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar,
+.obos-reader-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar,
+.obos-drama-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar { width: 9px; height: 9px; }
+.obos-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar-track,
+.obos-reader-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar-track,
+.obos-drama-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar-track,
+.obos-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar-corner,
+.obos-reader-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar-corner,
+.obos-drama-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar-corner { background: transparent; }
+.obos-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar-thumb,
+.obos-reader-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar-thumb,
+.obos-drama-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar-thumb {
+  border-radius: 999px; min-height: 28px;
+  border: 2.5px solid transparent; background-clip: padding-box;
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--berry) 52%, transparent), color-mix(in srgb, var(--taro) 52%, transparent));
+}
+.obos-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar-thumb:hover,
+.obos-reader-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar-thumb:hover,
+.obos-drama-root *:not(.obos-scroll):not(.obos-reader-scroll):not(.obos-wall)::-webkit-scrollbar-thumb:hover {
+  background-image: linear-gradient(180deg, var(--berry), var(--taro));
 }

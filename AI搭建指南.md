@@ -53,7 +53,7 @@ git clone https://github.com/Rurutia-Artemis/RuruOS.git <用户指定的路径>
 
 ## 第 5 步：接上日常 AI（按用户的工具走）
 
-- **本机 agent CLI（Claude Code / Codex / Gemini CLI / Qwen Code / iFlow / OpenCode）**：装任意一个并登录，插件里的 AI 按钮（浓缩/清杂/补剧集资料/搜评分）自动探测激活；用户以后在库目录跑它，`CLAUDE.md` / `AGENTS.md` 自动生效。国内用户推荐 Qwen Code 或 iFlow（直连）。用户已经装了你？那这一步已经完成了
+- **本机 agent CLI（Claude Code / Codex / Gemini CLI / Qwen Code / iFlow / OpenCode）**：装任意一个并登录，插件里的 AI 能力（已读自动浓缩归档、知识库整理、补剧集资料、搜评分）自动探测激活；用户以后在库目录跑它，`CLAUDE.md` / `AGENTS.md` 自动生效。国内用户推荐 Qwen Code 或 iFlow（直连）。用户已经装了你？那这一步已经完成了
 - **聊天机器人（Hermes / ChatGPT / Grok / 扣子…）**：把根目录《给智能体的说明书.md》全文喂给它作为系统提示词或知识文件
 - **你自己**继续帮用户维护内容的话：从现在起严格遵守 `AGENTS.md`，写入前先读一遍
 

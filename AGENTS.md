@@ -30,7 +30,7 @@
 
 | 主题 | 放什么 |
 |---|---|
-| `AI与Coding/` | AI、Claude Code、Codex 与 Skills、Agent 工程、Vibe Coding（按现有子目录归类） |
+| `AI与Coding/` | AI、Claude Code、Codex 与 Skills、Agent 工程、Vibe Coding（按现有子目录归类）；skill 聚合档案统一进 `Skill档案/`（一个 skill 一份 `Skill-<名称>.md`，`type: skill_note`，多篇文章介绍同一 skill 只维护这一份） |
 | `商业与变现/` | 商业模式、变现案例、市场研究、深度报告 |
 | `设计与审美/` | 设计知识与素材；配色卡统一进 `配色参考卡/`（命名沿用 `色所｜标题｜ID` 格式，ID 用于去重） |
 | `游戏设计/` | 游戏相关分析与设计笔记 |
@@ -40,6 +40,8 @@
 | `文档与方案/` | 成品文档、方案书、计划书、申请追踪 |
 
 拿不准主题的 → `20-Reading/Queue/` + `needs_review: true`，禁止新建主题目录。
+
+**浓缩管线（插件自动跑，Agent 知悉即可，不要代跑）**：用户点「标记已读」或「珍藏」后，插件后台自动浓缩该文——普通文章生成 `type: distilled_note` 浓缩笔记进对应主题目录（笔记自带要点节选与 `source_url`，不依赖原文存活）；skill 类文章并进 `AI与Coding/Skill档案/` 的对应档案。浓缩完成后，原文若无 `starred: true` 会被移入 vault 根目录 `.trash/`（可恢复）。Agent 不要动 `.trash/`，也不要给文章写 `distilled`/`starred` 字段。
 
 ## 通用规则
 
@@ -69,7 +71,7 @@ added: 2026-07-10
 
 正文：frontmatter 之后直接放提取的文章 markdown 全文，保留图片。
 
-已入库文章的 frontmatter 可能带 `note` 字段（用户在阅读器里写的备注），Agent 一律保留原样，不改不删。
+已入库文章的 frontmatter 可能带 `note`（用户在阅读器里写的备注）、`starred: true`（用户珍藏，永久保留不参与自动清除）、`distilled: true`（浓缩管线标记）字段——都由界面或浓缩管线写入，Agent 一律保留原样，不改不删不代写。
 
 **category 判定规则（按文章主体内容判断，不是按提到了什么）：**
 

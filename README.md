@@ -26,7 +26,7 @@
 | 追剧 | 搜剧建档（TVmaze + 豆瓣联想，中英文都行）、九宫格选海报、分季建档、豆瓣/IMDb 徽章、海报墙自动轮播 |
 | 生活 | 待办行内编辑、列表/月历双模式日程、自绘糖果日期选择器、macOS 提醒事项/日历同步 |
 | 账本 | 流水月度汇总；账本正文的 markdown 表格自动变形——占比表变占比条、小表变统计胶囊、明细变对账单、更新记录变时间线 |
-| AI（可选） | 文章浓缩进第二大脑、垃圾文章清杂、剧集资料自动补全、评分查证——本机装哪个 agent CLI 就用哪个（claude / codex / gemini / qwen / iflow / opencode 自动探测），没装就自动隐身 |
+| AI（可选） | 已读文章自动浓缩进第二大脑（同一 skill 聚合成一份档案，原文归档、珍藏豁免）、一键「整理」知识库、剧集资料自动补全、评分查证——本机装哪个 agent CLI 就用哪个（claude / codex / gemini / qwen / iflow / opencode 自动探测），没装就自动隐身 |
 
 <img src="https://raw.githubusercontent.com/Rurutia-Artemis/RuruOS/main/docs/assets/sec-shots.svg" alt="再看两眼" width="100%">
 
