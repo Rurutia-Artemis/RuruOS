@@ -23,10 +23,10 @@
 |---|---|
 | 中枢顶栏 | 渐变名牌、金句轮换、大字时钟、农历与建除小黄历、天气小剧场（Open-Meteo 免 key）、四统计块、樱花/细雨/落雪/萤火桌面动效 |
 | 文章 | 杂志排版阅读器、阅读进度记忆、便利贴备注、Aa 外观面板（字号/版宽/字体/配色）、一周热力柱 |
-| 追剧 | 搜剧建档（TVmaze + 豆瓣联想，中英文都行）、九宫格选海报、分季建档、豆瓣/IMDb 徽章、海报墙自动轮播 |
+| 追剧 | 搜剧建档（TVmaze + 豆瓣联想，中英文都行）、九宫格选海报、分季建档、豆瓣/IMDb 徽章、海报墙首尾相接无缝轮播、**一键「补全」全库封面/简介/评分**（走免费公开接口，不花 AI 额度） |
 | 生活 | 待办行内编辑、列表/月历双模式日程、自绘糖果日期选择器、macOS 提醒事项/日历同步 |
 | 账本 | 流水月度汇总；账本正文的 markdown 表格自动变形——占比表变占比条、小表变统计胶囊、明细变对账单、更新记录变时间线 |
-| AI（可选） | 已读文章自动浓缩进第二大脑（同一 skill 聚合成一份档案，原文归档、珍藏豁免）、一键「整理」知识库、剧集资料自动补全、评分查证——本机装哪个 agent CLI 就用哪个（claude / codex / gemini / qwen / iflow / opencode 自动探测），没装就自动隐身 |
+| AI（可选） | 已读文章自动浓缩进第二大脑（同一 skill 聚合成一份档案，原文归档、珍藏豁免）、一键「整理」知识库、剧集资料收尾（免费接口填不上的洞才交给它，比如把英文梗概翻成中文）——本机装哪个 agent CLI 就用哪个（claude / codex / gemini / qwen / iflow / opencode 自动探测），没装就自动隐身 |
 
 <img src="https://raw.githubusercontent.com/Rurutia-Artemis/RuruOS/main/docs/assets/sec-shots.svg" alt="再看两眼" width="100%">
 
@@ -64,7 +64,7 @@ git clone https://github.com/Rurutia-Artemis/RuruOS.git
 
 | 路线 | 适合谁 | 怎么做 |
 |---|---|---|
-| A · 不用 AI | 所有人 | 装完即用。搜剧、天气、账本、阅读器全是免费公开 API 或本地功能 |
+| A · 不用 AI | 所有人 | 装完即用。搜剧、剧集封面/简介/豆瓣·IMDb 评分补全、天气、账本、阅读器全是免费公开 API 或本地功能 |
 | B · 本机 agent CLI | 想要完整体验 | Claude Code / Codex / Gemini CLI / Qwen Code / iFlow 装任意一个，插件 AI 按钮自动探测激活 |
 | C · 其他智能体 | Codex / Grok / Hermes / ChatGPT 用户 | 把 [`给智能体的说明书.md`](给智能体的说明书.md) 喂给它，它就会按规范帮你写库 |
 

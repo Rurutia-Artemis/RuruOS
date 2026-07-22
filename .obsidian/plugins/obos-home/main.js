@@ -78,6 +78,12 @@ const NO_AI_MSG = '未检测到本机 AI 命令行工具（支持 claude / codex
 
 /* ═══════════ 公开版配置区结束 ═══════════ */
 
+/* 剧集资料抓取：豆瓣接口认桌面 UA；连发会被静默限流（实测连打 13 条后开始返空数组，
+   歇一会儿又好），所以每次请求之间强制留 DOUBAN_GAP，「补全」宁可慢也不要半途开始全 MISS */
+const DOUBAN_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36';
+const DOUBAN_GAP = 2500;
+const sleep = ms => new Promise(r => window.setTimeout(r, ms));
+
 /* v7.4 简易黄历：Chromium 内置中国农历（Intl）+ 建除十二神宜忌（本地推算，无网络） */
 const LUNAR_DAYS = ['初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十', '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十', '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十'];
 const LUNAR_MONTHS = ['正月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
@@ -286,6 +292,39 @@ function sanitizeFilename(name) {
 function stripFrontmatter(text) {
   const m = text.match(/^---\n[\s\S]*?\n---\n?/);
   return m ? text.slice(m[0].length) : text;
+}
+
+/* 从豆瓣条目的 sub_title 里挑出官方外文原名。这一栏可能是
+   「Baby Reindeer」，也可能是「驯鹿宝贝 / Baby Reindeer / Reindeer Baby」这样一串别名，
+   所以按 / 拆开，取第一个「有拉丁字母且不含汉字」的段。挑不出就返回空字符串，绝不硬凑。 */
+function latinAlias(sub) {
+  for (const part of String(sub || '').split('/')) {
+    const s = part.trim();
+    if (s && /[A-Za-z]/.test(s) && !/[一-鿿]/.test(s)) return s;
+  }
+  return '';
+}
+
+/* 中文占比够不够：豆瓣少数条目的 intro 是英文原版梗概，本库不收 */
+function mostlyCJK(text) {
+  const s = String(text || '').replace(/\s/g, '');
+  if (!s) return false;
+  return (s.match(/[一-鿿]/g) || []).length / s.length >= 0.2;
+}
+
+/* v8.5 一键补全用：把「## 简介」塞进正文——排在第一个二级标题（通常是「## 看点」）之前，
+   没有二级标题就贴到文末。frontmatter 与已有正文一字不动。
+   豆瓣 intro 用单换行分段，markdown 里会粘成一坨，统一改成空行分段。 */
+function insertIntro(text, intro) {
+  const m = text.match(/^---\n[\s\S]*?\n---\n?/);
+  const head = m ? m[0] : '';
+  const body = m ? text.slice(m[0].length) : text;
+  const block = `## 简介\n\n${String(intro).trim().replace(/\n{2,}/g, '\n').replace(/\n/g, '\n\n')}\n`;
+  const lines = body.split('\n');
+  const at = lines.findIndex(l => /^##\s+/.test(l));
+  if (at >= 0) { lines.splice(at, 0, block); return head + lines.join('\n'); }
+  if (!body.trim()) return `${head}\n${block}`;
+  return `${head}${body.replace(/\s*$/, '')}\n\n${block}`;
 }
 
 function catColor(cat) {
@@ -574,16 +613,455 @@ const dataMixin = {
     }
     return out;
   },
-  posterUrl(fm) {
+  /* poster 字段 → 海报的 TFile（删除剧集时要把图一起带走，别留孤儿文件） */
+  posterFile(fm) {
     let p = fm.poster;
     if (!p) return null;
     p = String(p).replace(/^\[\[/, '').replace(/\]\]$/, '');
     if (!p.trim()) return null;
     const dest = this.app.metadataCache.getFirstLinkpathDest(p, '');
+    return dest instanceof TFile ? dest : null;
+  },
+  posterUrl(fm) {
+    const dest = this.posterFile(fm);
     return dest ? this.app.vault.getResourcePath(dest) : null;
   },
   async setProp(file, mutate) {
     await this.app.fileManager.processFrontMatter(file, mutate);
+  },
+
+  /* v8.7 危险操作确认弹层（删除类共用）。复用 .obos-chooser 的遮罩，盒子收窄成对话框。
+     删除是唯一「点错了要哭」的操作，所以一律先问一句——Esc / 点遮罩 / 取消 都算否。 */
+  confirmDanger({ art, title, sub, yes }, onYes) {
+    const root = this.contentEl;
+    root.querySelectorAll('.obos-chooser').forEach(x => x.remove());
+    const overlay = root.createDiv({ cls: 'obos-chooser obos-confirm' });
+    const box = overlay.createDiv({ cls: 'obos-chooser-box' });
+    const close = () => { overlay.remove(); window.removeEventListener('keydown', onKey); };
+    const onKey = e => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+    window.addEventListener('keydown', onKey);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    box.createDiv({ cls: 'obos-confirm-art', text: art || '🗑' });
+    box.createDiv({ cls: 'obos-confirm-title', text: title });
+    const s = box.createDiv({ cls: 'obos-confirm-sub' });
+    s.innerHTML = sub;
+    const btns = box.createDiv({ cls: 'obos-confirm-btns' });
+    const no = btns.createEl('button', { cls: 'obos-icon-btn obos-jc-sky', text: '再想想' });
+    no.onclick = close;
+    const go = btns.createEl('button', { cls: 'obos-danger-btn', text: yes || '删除' });
+    go.onclick = async () => { close(); await onYes(); };
+    window.setTimeout(() => no.focus(), 30);   /* 焦点默认落在「再想想」，回车不会误删 */
+  },
+
+  /* 删除一条笔记：走 Obsidian 的废纸篓（跟随用户设置，进系统回收站或 vault 的 .trash/），
+     不做真删除——用户点错了还能捞回来。 */
+  async trashNote(file) {
+    await this.app.fileManager.trashFile(file);
+  },
+
+  /* ===== v8.5 剧集资料抓取标准（唯一权威，Mia 那边同一套，见 AGENTS.md「剧集资料抓取标准」） =====
+     ===== v8.6 重做成「两层 + 逐字段级联」，不再是各源尽力而为、漏了就漏 =====
+
+     【第一层 确定性级联】零 AI，永不编造。先定身份，再逐字段往下落：
+       身份 A 豆瓣：subject_suggest 拿 id（出中文名/季/年份/中文海报/英文原名 sub_title）
+       身份 B IMDb：v3.sg.media-imdb.com/suggestion 拿 tt 号 → api.graphql.imdb.com 拿详情
+                    **电影剧集通吃**（TVmaze 只有剧集，《怒火救援》《K-POP 猎魔女团》漏分就是栽这儿），
+                    出 IMDb 分 / 英文剧情 / 千像素级海报 / 官方原名 / 年份 / 类型；中文名也能直接查中
+       封面   豆瓣 l_ratio_poster → IMDb primaryImage → TVmaze original → iTunes 800x800
+       简介   豆瓣 intro（中文，直接用）→ IMDb plot / TVmaze summary（英文，只标记待翻译，不直接写库）
+       豆瓣分 j/subject_abstract 的 rate（只要 UA）
+       IMDb 分 GraphQL 的 ratingsSummary.aggregateRating
+       原名   豆瓣 sub_title → IMDb originalTitleText
+
+     【第二层 AI 兜底】第一层剩下的洞攒成一张清单，交一个 AI 任务收尾（翻英文简介 / 联网搜实在查不到的）。
+     规则同上：只补空缺、查不到留空、绝不编造。见 aiPatchDramas()。
+
+     匹配铁律：年份差 >1 就不算命中（有年份时）、季号要一致、名字要对得上。三条缺一不可，
+     宁可留给第二层也不许张冠李戴——《海贼王真人版 第二季》不带年份时 IMDb 联想首条是 1999 年的动画版。 */
+
+  /* 搜索用词表：原名（含括号里的别名）→ aka → 中文名；去季号版本一并给，豆瓣命不中整名时兜底 */
+  posterCandidates(fm) {
+    const out = [];
+    const push = v => { if (v && !out.includes(v)) out.push(String(v)); };
+    const orig = String(fm.title_original || '');
+    const paren = orig.match(/（(.+?)）|\((.+?)\)/);
+    if (paren) push(paren[1] || paren[2]);
+    push(orig.replace(/（.+?）|\(.+?\)/g, '').trim());
+    if (Array.isArray(fm.aka)) fm.aka.forEach(push);
+    push(fm.title);
+    return out.filter(Boolean);
+  },
+
+  /* dbHit 传 undefined＝自己去查豆瓣；传条目或 null＝用现成的，别重复打豆瓣（限流很紧） */
+  async collectPosterCandidates(fm, dbHit) {
+    const out = [];
+    /* v8.5 豆瓣排头位：中文库天然分季，海报也是国区观众认的那张 */
+    try {
+      const hit = dbHit === undefined ? await this.doubanFind(fm) : dbHit;
+      if (hit && hit.img) {
+        out.push({
+          url: String(hit.img).replace('/s_ratio_poster/', '/l_ratio_poster/'),
+          label: `${hit.title}${hit.year ? ' · ' + hit.year : ''}`,
+          source: '豆瓣',
+          rating: null,
+        });
+      }
+    } catch (e) { /* 豆瓣挂了不影响后面几路 */ }
+    /* v8.6 IMDb 次席：千像素级原图，而且电影也有（TVmaze 只有剧集） */
+    try {
+      const hit = await this.imdbFind(fm, fm.title_original);
+      if (hit) {
+        const d = await this.imdbDetail(hit.id);
+        if (d && d.poster) {
+          out.push({ url: d.poster, label: `${hit.l}${hit.y ? ' · ' + hit.y : ''}`, source: 'IMDb', rating: d.rating || null });
+        }
+      }
+    } catch (e) { /* 下一路 */ }
+    for (const q of this.posterCandidates(fm)) {
+      try {
+        const r = await requestUrl({ url: `https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q)}` });
+        for (const it of (r.json || [])) {
+          const sh = it.show || {};
+          if (sh.image && sh.image.original) {
+            out.push({
+              url: sh.image.original,
+              label: `${sh.name || q}${sh.premiered ? ' · ' + sh.premiered.slice(0, 4) : ''}`,
+              source: 'TVmaze',
+              rating: (sh.rating && sh.rating.average) || null,
+            });
+          }
+        }
+      } catch (e) { /* 下一个候选词 */ }
+      if (out.length >= 8) break;
+    }
+    if (out.length < 4) {
+      for (const q of this.posterCandidates(fm)) {
+        try {
+          const r = await requestUrl({ url: `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=tvSeason&limit=4` });
+          for (const res of (JSON.parse(r.text).results || [])) {
+            if (res.artworkUrl100) {
+              out.push({ url: res.artworkUrl100.replace('100x100bb', '800x800bb'), label: res.collectionName || q, source: 'iTunes', rating: null });
+            }
+          }
+        } catch (e) { /* 下一个 */ }
+        if (out.length >= 8) break;
+      }
+    }
+    const seen = new Set();
+    return out.filter(c => !seen.has(c.url) && seen.add(c.url)).slice(0, 8);
+  },
+
+  /* 标题里的季号：拿来卡豆瓣候选，别把《布里奇顿 第四季》配到第一季去 */
+  seasonNo(title) {
+    const CN = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
+    const m = String(title || '').match(/第\s*([一二三四五六七八九十\d]+)\s*季/);
+    if (!m) return 0;
+    return Number(m[1]) || CN[m[1]] || 0;
+  },
+  bareTitle(title) {
+    return String(title || '').replace(/\s*第\s*[一二三四五六七八九十\d]+\s*季\s*$/, '').trim();
+  },
+
+  /* 豆瓣联想：中文库最全，返回 {id,title,sub_title,img,episode,year}。
+     命中判定三条缺一不可＝季号一致（我们不带季号时豆瓣「第一季」也算）+ 年份差 ≤1（有年份时）+ 名字对得上。
+     全部查询词都返空则疑似限流，歇一大拍重试一轮。 */
+  async doubanFind(fm, retried) {
+    const title = String(fm.title || '');
+    const want = this.seasonNo(title);
+    const wantYear = Number(fm.year) || 0;
+    let empty = true;
+    const queries = [];
+    const push = v => { v = String(v || '').trim(); if (v && !queries.includes(v)) queries.push(v); };
+    push(title);
+    push(this.bareTitle(title));
+    push(fm.title_original);
+    if (Array.isArray(fm.aka)) fm.aka.forEach(push);
+    for (const q of queries) {
+      let list = [];
+      try {
+        const r = await requestUrl({
+          url: `https://movie.douban.com/j/subject_suggest?q=${encodeURIComponent(q)}`,
+          headers: { 'User-Agent': DOUBAN_UA },
+        });
+        list = (Array.isArray(r.json) ? r.json : []).filter(x => x && x.type === 'movie' && x.id);
+      } catch (e) { /* 换下一个词 */ }
+      /* 豆瓣联想是模糊匹配，光看年份会把《示例·星海归途》配到不相干的条目上——
+         必须要求「中文名去季号」或「原名」和查询词对得上，宁可 MISS 不许张冠李戴 */
+      const norm = v => String(v || '').toLowerCase().replace(/[\s·・:：,，.。'"'"!！?？&-]/g, '');
+      const nq = norm(this.bareTitle(q));
+      const hit = list.find(s => {
+        /* 我们的标题不带季号时，豆瓣的「第一季」条目也算命中——豆瓣天然按季拆条目，
+           只有一季的剧在我们库里就叫本名（《混沌少年时》↔《混沌少年时 第一季》） */
+        const sn = this.seasonNo(s.title);
+        if (want ? sn !== want : (sn !== 0 && sn !== 1)) return false;
+        if (wantYear && Number(s.year) && Math.abs(Number(s.year) - wantYear) > 1) return false;
+        return norm(this.bareTitle(s.title)) === nq || norm(s.sub_title) === nq;
+      });
+      if (hit) return hit;
+      empty = empty && !list.length;
+      await sleep(DOUBAN_GAP);
+    }
+    /* 每个查询词都拿回空数组 ≠ 查无此剧，多半是被豆瓣限流了（实测连打十几条就开始静默返空）。
+       歇久一点重试一轮；真查无此剧时首轮就会有候选、只是对不上，不会走到这里。 */
+    if (empty && !retried) {
+      await sleep(DOUBAN_GAP * 3);
+      return this.doubanFind(fm, true);
+    }
+    return null;
+  },
+
+  /* 豆瓣条目详情 → { rating, intro, episodes }。两条腿走路：
+     ① subject_abstract 只要 UA，最稳，出分数与集数
+     ② rexxar 详情出简介，但必须带 Referer——万一哪天 requestUrl 把 Referer 吞了，分数还有 ① 兜着，
+        不会又回到「douban 字段永远是空」的老毛病。rexxar 走错端点会 302，所以 tv/movie 两个都试。 */
+  async doubanDetail(id) {
+    const out = { rating: null, intro: '', episodes: 0 };
+    try {
+      const r = await requestUrl({
+        url: `https://movie.douban.com/j/subject_abstract?subject_id=${id}`,
+        headers: { 'User-Agent': DOUBAN_UA },
+      });
+      const s = r.json && r.json.subject;
+      if (s) {
+        const v = Number(s.rate);
+        if (v > 0) out.rating = v;
+        out.episodes = Number(s.episodes_count) || 0;
+      }
+    } catch (e) { /* 落到 ② */ }
+    await sleep(DOUBAN_GAP);
+    for (const kind of ['tv', 'movie']) {
+      try {
+        const r = await requestUrl({
+          url: `https://m.douban.com/rexxar/api/v2/${kind}/${id}`,
+          headers: { 'User-Agent': DOUBAN_UA, Referer: `https://m.douban.com/movie/subject/${id}/` },
+        });
+        const d = r.json;
+        if (d && typeof d === 'object' && d.rating) {
+          if (!out.rating && typeof d.rating.value === 'number' && d.rating.value > 0) out.rating = d.rating.value;
+          if (d.intro) out.intro = String(d.intro);
+          if (!out.episodes) out.episodes = Number(d.episodes_count) || 0;
+          break;
+        }
+      } catch (e) { /* 试下一个端点 */ }
+    }
+    return out;
+  },
+
+  /* IMDb 官方联想（免 key，电影/剧集/迷你剧通吃，中文名也能查中）→ 最佳条目 {id,l,y,qid,i}。
+
+     匹配规则分两路，**别再拿年份当主要判据**：IMDb 的年份是「剧集首播年」，我们库里的是「该季年份」，
+     《怪奇物语 第五季》(2025) 因此被配到 2025 年的《Stranger Things 5: Behind the Episode》花絮上（5.9 分）。
+       · 英文查询词 → 只认「去季号后名字完全相等」的条目。IMDb 分本来就是剧集级的，配到主条目才对。
+       · 中文查询词 → IMDb 自己把这个中文别名映射到了该条目，本身就是强信号；再用年份卡一道防花絮。
+     英文词排在前面，能用英文匹配就绝不落到中文那条路。 */
+  async imdbFind(fm, origName) {
+    const wantYear = Number(fm.year) || 0;
+    const KINDS = ['movie', 'tvSeries', 'tvMiniSeries', 'tvMovie', 'tvSpecial'];
+    const norm = v => String(v || '').toLowerCase().replace(/[\s·・:：,，.。'"'"!！?？&-]/g, '');
+    /* 英文季号尾巴：「Stranger Things 5」「Squid Game Season 2」「The Bear S3」→ 去掉 */
+    const bareEN = v => String(v || '').replace(/[\s:：-]*(season\s*)?\d+\s*$/i, '').trim() || String(v || '');
+    const queries = [];
+    const push = v => { v = String(v || '').trim(); if (v && !queries.includes(v)) queries.push(v); };
+    push(bareEN(origName)); push(origName);
+    push(bareEN(fm.title_original)); push(fm.title_original);
+    push(this.bareTitle(fm.title)); push(fm.title);
+    for (const q of queries) {
+      let list = [];
+      try {
+        const r = await requestUrl({
+          url: `https://v3.sg.media-imdb.com/suggestion/x/${encodeURIComponent(q.toLowerCase())}.json`,
+          headers: { 'User-Agent': DOUBAN_UA },
+        });
+        list = ((r.json && r.json.d) || []).filter(x => x && x.id && /^tt/.test(x.id) && KINDS.includes(x.qid));
+      } catch (e) { /* 换下一个词 */ }
+      if (!list.length) continue;
+      if (/[A-Za-z]/.test(q) && !/[一-鿿]/.test(q)) {
+        const nq = norm(bareEN(q));
+        const hit = list.find(x => norm(bareEN(x.l)) === nq);
+        if (hit) return hit;
+        continue;
+      }
+      const hit = list.find(x => !wantYear || (Number(x.y) && Math.abs(Number(x.y) - wantYear) <= 1));
+      if (hit) return hit;
+    }
+    return null;
+  },
+
+  /* IMDb 条目详情：分数 + 英文剧情 + 高清海报 + 官方原名。一次 GraphQL 全拿到 */
+  async imdbDetail(id) {
+    const q = `query{title(id:"${id}"){originalTitleText{text} releaseYear{year} titleType{id}`
+      + ` ratingsSummary{aggregateRating} primaryImage{url width height} plot{plotText{plainText}}}}`;
+    const r = await requestUrl({
+      url: 'https://api.graphql.imdb.com/',
+      method: 'POST',
+      contentType: 'application/json',
+      headers: { 'User-Agent': DOUBAN_UA },
+      body: JSON.stringify({ query: q }),
+    });
+    const t = r.json && r.json.data && r.json.data.title;
+    if (!t) return null;
+    const img = t.primaryImage || {};
+    return {
+      rating: (t.ratingsSummary && typeof t.ratingsSummary.aggregateRating === 'number')
+        ? t.ratingsSummary.aggregateRating : null,
+      plot: ((t.plot || {}).plotText || {}).plainText || '',
+      poster: img.url || null,
+      origTitle: (t.originalTitleText || {}).text || '',
+      year: (t.releaseYear || {}).year || 0,
+    };
+  },
+
+  /* TVmaze：只有剧集，退居第三顺位当兜底（封面 + tvmaze 分 + 英文 summary） */
+  async tvmazeFind(fm, origName) {
+    const want = Number(fm.year) || 0;
+    const queries = [origName].concat(this.posterCandidates(fm)).filter(Boolean);
+    for (const q of queries) {
+      try {
+        const r = await requestUrl({ url: `https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q)}` });
+        const list = (r.json || []).map(x => x.show).filter(Boolean);
+        const sh = list.find(s => !want || !s.premiered || Math.abs(Number(s.premiered.slice(0, 4)) - want) <= 1)
+          || (want ? null : list[0]);
+        if (sh) return sh;
+      } catch (e) { /* 换词 */ }
+    }
+    return null;
+  },
+
+  /* 【第一层】一部剧的全部线上事实。先定身份（豆瓣中文侧 + IMDb 英文侧），再逐字段级联。
+     每一路都独立 try，谁挂了谁留空，绝不互相拖累；剩下的洞由 aiPatchDramas 收尾。 */
+  async fetchDramaFacts(fm) {
+    const facts = {
+      hit: null, detail: null, imdbId: '', imdbInfo: null, tv: null,
+      douban: null, imdb: null, tvmaze: null,
+      poster: null, posterFrom: '', intro: '', introEN: '', origName: '', year: 0,
+    };
+
+    /* —— 身份 A：豆瓣（中文名、季、年份、中文简介、中文海报、英文原名）—— */
+    try {
+      facts.hit = await this.doubanFind(fm);
+      if (facts.hit) {
+        facts.origName = latinAlias(facts.hit.sub_title);
+        facts.year = Number(facts.hit.year) || 0;
+        await sleep(DOUBAN_GAP);
+        facts.detail = await this.doubanDetail(facts.hit.id);
+        facts.douban = facts.detail.rating;
+        if (facts.hit.img) {
+          facts.poster = String(facts.hit.img).replace('/s_ratio_poster/', '/l_ratio_poster/');
+          facts.posterFrom = '豆瓣';
+        }
+        /* 豆瓣少数条目的 intro 是英文原版梗概（如《骗我一次》）——中文库不直接收英文，
+           转存进 introEN 交给第二层翻译，别再像 v8.5 那样一句「留空」就完事 */
+        if (mostlyCJK(facts.detail.intro)) facts.intro = facts.detail.intro;
+        else if (facts.detail.intro) facts.introEN = facts.detail.intro;
+      }
+    } catch (e) { /* 豆瓣这路作废，英文侧照跑 */ }
+
+    /* 带上刚学到的原名与年份再问英文侧——TVmaze / iTunes / IMDb 都是英文库，
+       拿中文剧名去问命中率差一大截（用户点名「很多封面用中文搜不着」） */
+    const fm2 = Object.assign({}, fm, {
+      title_original: String(fm.title_original || '').trim() || facts.origName || '',
+      year: Number(fm.year) || facts.year || 0,
+    });
+
+    /* —— 身份 B：IMDb（分数、英文剧情、高清海报、官方原名）。电影剧集通吃 —— */
+    try {
+      const hit = await this.imdbFind(fm2, facts.origName);
+      if (hit) {
+        facts.imdbId = hit.id;
+        facts.imdbInfo = await this.imdbDetail(hit.id);
+        if (facts.imdbInfo) {
+          facts.imdb = facts.imdbInfo.rating;
+          /* 原名优先取 IMDb 的英文展示名，而不是 originalTitleText——后者可能是罗马音
+             （《铁拳教育》= Chamgyoyuk），而这个字段的用途是「拿去搜封面」，英文名才好使 */
+          if (!facts.origName) facts.origName = latinAlias(hit.l) || facts.imdbInfo.origTitle || '';
+          /* year 只认豆瓣那边的——本库的 year 是「该季年份」，IMDb 给的是「剧集首播年」，
+             拿它填会把《暗夜情报员 第三季》写成 2023（那是第一季的年份）。IMDb 的年份只在
+             上面的匹配与交叉验证里用，绝不写进笔记；不带季号的条目才允许拿它兜底。 */
+          if (!facts.year && !this.seasonNo(fm.title)) facts.year = Number(facts.imdbInfo.year) || Number(hit.y) || 0;
+          if (!facts.poster && facts.imdbInfo.poster) { facts.poster = facts.imdbInfo.poster; facts.posterFrom = 'IMDb'; }
+          if (!facts.intro && !facts.introEN && facts.imdbInfo.plot) facts.introEN = facts.imdbInfo.plot;
+        }
+      }
+    } catch (e) { /* 分数留空，绝不编造 */ }
+
+    /* —— 交叉验证：两侧认的是不是同一部作品 ——
+       《怒火救援》(Netflix 2026 剧) 的豆瓣首条是 2004 年丹泽尔那部同名电影（8.1），
+       IMDb 认的是 2026 年的剧（6.7）——两个分数写进同一条笔记就是纯错数据。
+       只对「标题不带季号」的条目查：带季号的本来就该「豆瓣＝该季年份、IMDb＝剧集首播年」，差几年是正常的。 */
+    const dbYear = Number((facts.hit || {}).year) || 0;
+    const imYear = Number((facts.imdbInfo || {}).year) || 0;
+    if (!this.seasonNo(fm.title) && dbYear && imYear && Math.abs(dbYear - imYear) > 2) {
+      const mine = Number(fm.year) || 0;
+      if (mine && Math.abs(dbYear - mine) <= 1) { facts.imdb = null; facts.imdbId = ''; facts.imdbInfo = null; }
+      else if (mine && Math.abs(imYear - mine) <= 1) { facts.douban = null; facts.hit = null; facts.detail = null; facts.intro = ''; }
+      else {
+        /* 笔记里连年份都没有，没法判谁对——两边分数一律不写，整条交第二层去分辨。
+           year 也不能写：写进去等于替用户认定了是哪一部 */
+        facts.conflict = { douban: dbYear, imdb: imYear };
+        facts.douban = null; facts.imdb = null; facts.intro = ''; facts.year = 0;
+      }
+    }
+
+    /* —— 兜底源：TVmaze（封面 / tvmaze 分 / 英文 summary）—— */
+    if (!facts.poster || !facts.intro && !facts.introEN || !facts.imdb) {
+      try {
+        facts.tv = await this.tvmazeFind(fm2, facts.origName);
+        if (facts.tv) {
+          facts.tvmaze = (facts.tv.rating && facts.tv.rating.average) || null;
+          if (!facts.poster && facts.tv.image && facts.tv.image.original) {
+            facts.poster = facts.tv.image.original; facts.posterFrom = 'TVmaze';
+          }
+          if (!facts.intro && !facts.introEN && facts.tv.summary) {
+            facts.introEN = String(facts.tv.summary).replace(/<[^>]+>/g, '').trim();
+          }
+        }
+      } catch (e) { /* 兜底而已 */ }
+    }
+
+    /* —— 封面最后一道：iTunes（也按英文名搜）—— */
+    if (!facts.poster) {
+      try {
+        const cands = await this.collectPosterCandidates(fm2, facts.hit || null);
+        if (cands.length) { facts.poster = cands[0].url; facts.posterFrom = cands[0].source; }
+      } catch (e) { /* 交给第二层 */ }
+    }
+    return facts;
+  },
+
+  /* 写分数 + 学回来的英文原名与年份：拿到值才写，查不到的字段原样保留
+     （宁可空着也不许瞎填，铁律）。原名写进 title_original，详情页本来就把它显示在中文名底下，
+     不往 title 里塞括号——title 是文件名与全库显示名，掺了英文哪儿都变丑。
+     年份也补：year 为 0 时后面每一轮匹配都没法排歧（《海贼王真人版 第二季》就是栽在没年份上）。 */
+  async fillRatings(file, fm, facts) {
+    const f = facts || await this.fetchDramaFacts(fm);
+    const douban = f.douban || null;
+    if (douban || f.imdb || f.tvmaze || f.origName || f.year) {
+      await this.setProp(file, p => {
+        const r = Object.assign({}, p.external_rating);
+        if (douban) r.douban = douban;
+        if (f.imdb) r.imdb = f.imdb;
+        if (f.tvmaze) r.tvmaze = f.tvmaze;
+        p.external_rating = r;
+        if (f.origName && !String(p.title_original || '').trim()) p.title_original = f.origName;
+        if (f.year && !Number(p.year)) p.year = f.year;
+      });
+    }
+    return { douban, imdb: f.imdb, tvmaze: f.tvmaze, origName: f.origName, facts: f };
+  },
+
+  /* 把一张网图存进 Posters/，写回 poster 字段；已有同名文件就覆盖。
+     v8.5b **必须带 Referer**：豆瓣图床 img*.doubanio.com 有防盗链，不带 Referer 一律回 418
+     （UA 带不带都没用）——v8.5 首跑十几部剧的封面全丢就是栽在这儿。给 TVmaze/iTunes 多带一个
+     豆瓣 Referer 无害，所以不分来源统一带。 */
+  async savePoster(file, fm, url) {
+    const img = await requestUrl({ url, headers: { 'User-Agent': DOUBAN_UA, Referer: 'https://movie.douban.com/' } });
+    const ext = (url.split('.').pop().split('?')[0] || 'jpg').slice(0, 4);
+    const path = `${FOLDERS.posters}/${sanitizeFilename(fm.title || file.basename)}.${ext}`;
+    const existing = this.app.vault.getAbstractFileByPath(path);
+    if (existing instanceof TFile) await this.app.vault.modifyBinary(existing, img.arrayBuffer);
+    else await this.app.vault.createBinary(path, img.arrayBuffer);
+    await this.setProp(file, f => { f.poster = `[[${path}]]`; });
+    return path;
   },
   async openState(viewType, state) {
     const leaves = this.app.workspace.getLeavesOfType(viewType);
@@ -788,11 +1266,24 @@ class ObosReaderView extends ItemView {
         const next = bar.createEl('button', { cls: 'obos-icon-btn obos-jc-taro', text: '下一篇未读 ›' });
         next.onclick = () => this.openInView(VIEW_READER, nextUnread[0].file);
       }
-      const discard = bar.createEl('button', { cls: 'obos-discard-btn', text: '废弃' });
-      discard.onclick = async () => {
-        await this.app.vault.trash(file, true);
-        new Notice('文章已废弃');
-        this.plugin.activateHome();
+      /* v8.7 原来叫「废弃」、粉色、**点一下当场就删，没有二次确认**——按错一次文章就没了。
+         改成红色「删除」+ 确认弹层，和剧集详情页同一套。 */
+      const discard = bar.createEl('button', {
+        cls: 'obos-danger-btn', text: '🗑 删除',
+        attr: { title: '把这篇文章移出库（进废纸篓，可恢复）' },
+      });
+      discard.onclick = () => {
+        const tt = fm.title || file.basename;
+        this.confirmDanger({
+          art: '🗑',
+          title: '删除这篇文章？',
+          sub: `《<b>${tt}</b>》会移进废纸篓，待读列表里不再出现。<br>误删了可以从废纸篓里捞回来。`,
+          yes: '删掉',
+        }, async () => {
+          await this.trashNote(file);
+          new Notice('文章已删除');
+          this.plugin.activateHome();
+        });
       };
       /* 已读/珍藏按钮状态本地跟踪 + 就地重绘：
          写完 frontmatter 立刻 this.render() 会读到滞后的 metadataCache 旧值——按钮看着没反应，
@@ -989,55 +1480,6 @@ class ObosDramaView extends ItemView {
     }));
   }
 
-  /* 联网搜封面：TVmaze → iTunes 兜底 */
-  posterCandidates(fm) {
-    const out = [];
-    const push = v => { if (v && !out.includes(v)) out.push(String(v)); };
-    const orig = String(fm.title_original || '');
-    const paren = orig.match(/（(.+?)）|\((.+?)\)/);
-    if (paren) push(paren[1] || paren[2]);
-    push(orig.replace(/（.+?）|\(.+?\)/g, '').trim());
-    if (Array.isArray(fm.aka)) fm.aka.forEach(push);
-    push(fm.title);
-    return out.filter(Boolean);
-  }
-
-  async collectPosterCandidates(fm) {
-    const out = [];
-    for (const q of this.posterCandidates(fm)) {
-      try {
-        const r = await requestUrl({ url: `https://api.tvmaze.com/search/shows?q=${encodeURIComponent(q)}` });
-        for (const it of (r.json || [])) {
-          const sh = it.show || {};
-          if (sh.image && sh.image.original) {
-            out.push({
-              url: sh.image.original,
-              label: `${sh.name || q}${sh.premiered ? ' · ' + sh.premiered.slice(0, 4) : ''}`,
-              source: 'TVmaze',
-              rating: (sh.rating && sh.rating.average) || null,
-            });
-          }
-        }
-      } catch (e) { /* 下一个候选词 */ }
-      if (out.length >= 8) break;
-    }
-    if (out.length < 4) {
-      for (const q of this.posterCandidates(fm)) {
-        try {
-          const r = await requestUrl({ url: `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=tvSeason&limit=4` });
-          for (const res of (JSON.parse(r.text).results || [])) {
-            if (res.artworkUrl100) {
-              out.push({ url: res.artworkUrl100.replace('100x100bb', '800x800bb'), label: res.collectionName || q, source: 'iTunes', rating: null });
-            }
-          }
-        } catch (e) { /* 下一个 */ }
-        if (out.length >= 8) break;
-      }
-    }
-    const seen = new Set();
-    return out.filter(c => !seen.has(c.url) && seen.add(c.url)).slice(0, 8);
-  }
-
   async fetchPoster(file, fm) {
     if (this.searching) return;
     this.searching = true;
@@ -1133,11 +1575,44 @@ class ObosDramaView extends ItemView {
         + `frontmatter 只允许动 notes（为空时填一句话推荐语），其余一字不动。`
         + `最后输出一行：《${tt}》简介已收录。`);
     };
+    /* v8.5 搜评分改走结构化接口：原先丢给 AI 联网搜，跑完照样 douban 空着（用户拿《驯鹿宝贝》
+       这种烂大街的剧逮到）——豆瓣搜索页对爬虫 302 到验证页，AI 根本读不到分数。现在直连接口，秒回真分。 */
     const rateBtn = bar.createEl('button', { cls: 'obos-icon-btn obos-jc-butter', text: '搜评分' });
-    rateBtn.onclick = () => {
+    rateBtn.onclick = async () => {
+      if (this.rating) return;
+      this.rating = true;
       const tt = fm.title || file.basename;
-      this.plugin.runClaude('搜评分',
-        `联网搜索剧集《${tt}》（${fm.title_original || ''}${fm.year ? '，' + fm.year + ' 年' : ''}）的豆瓣评分和 IMDb 评分，务必确认是真实分数。然后编辑 vault 文件 "${file.path}"：只更新 frontmatter 里 external_rating 的 douban 与 imdb 两个子字段（填数字；查不到的字段保持原样，绝不编造），其余内容一字不动。最后输出一行：《${tt}》豆瓣 X · IMDb Y。`);
+      rateBtn.textContent = '查分中…';
+      try {
+        const got = await this.fillRatings(file, fm);
+        new Notice(got.douban || got.imdb
+          ? `《${tt}》豆瓣 ${got.douban || '—'} · IMDb ${got.imdb || '—'}`
+          : `《${tt}》没查到分数——把 title_original 填成官方原名再试`);
+        this.render();
+      } catch (e) {
+        new Notice('查分失败：' + e.message);
+        rateBtn.textContent = '搜评分';
+      } finally {
+        this.rating = false;
+      }
+    };
+    /* v8.7 删除：这部剧不想要了就整条撤走。海报是这条笔记专属的（文件名跟剧名走），一并带走不留孤儿图。
+       走废纸篓不做真删除，点错了能捞回来。 */
+    const delBtn = bar.createEl('button', { cls: 'obos-danger-btn', text: '🗑 删除', attr: { title: '把这部剧从库里移除（进废纸篓，可恢复）' } });
+    delBtn.onclick = () => {
+      const tt = fm.title || file.basename;
+      const poster = this.posterFile(fm);
+      this.confirmDanger({
+        art: '🗑',
+        title: `删除《${tt}》？`,
+        sub: `这条剧集笔记${poster ? '和它的封面图' : ''}会移进废纸篓，追剧墙上不再出现。<br>误删了可以从废纸篓里捞回来。`,
+        yes: '删掉',
+      }, async () => {
+        if (poster) { try { await this.trashNote(poster); } catch (e) { console.error('封面删除失败', e); } }
+        await this.trashNote(file);
+        new Notice(`《${tt}》已删除`);
+        this.plugin.activateHome();
+      });
     };
 
     const scroll = root.createDiv({ cls: 'obos-reader-scroll' });
@@ -1645,7 +2120,12 @@ class ObosHomeView extends ItemView {
     this.calCursor = null;
     this.calSelected = null;
     this.aiBusy = { tidy: false };
-    this.refresh = debounce(() => { if (this.editingTask || this.editingEvent || this.addingEvent) return; this.render(); }, 250, true);
+    /* bulkFill 期间也要冻住：一键补全每写一部剧就触发一次 changed，整页重渲染会把进度浮层连同
+       按钮一起冲掉（跑完自己补一次 render） */
+    this.refresh = debounce(() => {
+      if (this.editingTask || this.editingEvent || this.addingEvent || this.bulkFilling) return;
+      this.render();
+    }, 250, true);
   }
 
   getViewType() { return VIEW_HOME; }
@@ -2753,10 +3233,11 @@ class ObosHomeView extends ItemView {
         if (a.fm.starred) row.createSpan({ cls: 'obos-art-star', text: '★', attr: { title: '已珍藏，永久保留' } });
         row.createDiv({ cls: 'obos-art-readat', text: String(a.fm.read_at || '').slice(5) });
       }
-      const del = row.createEl('button', { cls: 'obos-row-del', text: '×', attr: { 'aria-label': '废弃文章' } });
+      /* 措辞统一成「删除」：阅读器里那颗也从「废弃」改过来了，同一个动作别两个叫法 */
+      const del = row.createEl('button', { cls: 'obos-row-del', text: '×', attr: { 'aria-label': '删除文章' } });
       del.onclick = e => {
         e.stopPropagation();
-        this.leaveRow(row, async () => { await this.app.vault.trash(a.file, true); new Notice('文章已废弃'); });
+        this.leaveRow(row, async () => { await this.app.vault.trash(a.file, true); new Notice('文章已删除'); });
       };
     }
     if (shown.length > ART_PAGE) this.pager(card, this.articlePage, artPages, CANDY.berry, p => { this.articlePage = p; this.render(); });
@@ -2833,6 +3314,15 @@ class ObosHomeView extends ItemView {
     catDoodle.innerHTML = ICON_CAT_DOODLE;
     const addBtn = head.createEl('button', { cls: 'obos-jelly obos-jc-berry', text: '＋ 搜剧', attr: { title: '搜索一部剧，自动抓数据入库' } });
     addBtn.onclick = e => { e.stopPropagation(); this.showDramaSearch(); };
+    /* v8.5 一键补全：全库缺封面/缺简介/缺豆瓣 IMDb 分的剧一次补齐。
+       全程走豆瓣与 IMDb 的结构化接口，不烧任何 AI 额度（详见 fetchDramaFacts 上方的抓取标准） */
+    const fillBtn = head.createEl('button', {
+      cls: 'obos-jelly obos-jc-sky obos-bulkfill',
+      /* 文案 v8.5b 收成两个字（原来那串「一键搜索所有当前剧的封面和简介」用户嫌太长），全文进 title */
+      text: '补全',
+      attr: { title: '一键搜索所有当前剧的封面和简介：扫描全部剧集，缺封面补封面、缺简介补简介、缺豆瓣/IMDb 评分补评分。走豆瓣与 IMDb 官方接口，不花 AI 额度；为避开豆瓣限流会慢慢来，请勿关页' },
+    });
+    fillBtn.onclick = e => { e.stopPropagation(); this.bulkFillDramas(fillBtn); };
     const tabs = head.createDiv({ cls: 'obos-tabs' });
     for (const s of DRAMA_STATUSES) {
       const n = dramas.filter(d => d.fm.status === s).length;
@@ -2846,7 +3336,16 @@ class ObosHomeView extends ItemView {
 
     const wall = card.createDiv({ cls: 'obos-wall' });
     /* 鼠标按住拖拽横滑；拖过 4px 即判定为拖动，期间屏蔽海报点击防误开详情 */
-    let drag = null, hover = false, pauseUntil = 0;
+    let drag = null, hover = false;
+    /* 接龙一圈的长度（第一张副本的左沿 − 第一张原件的左沿）。0 = 没满一页，不接龙 */
+    let wrapAt = 0;
+    /* 越过接龙点就原地平移一圈：两份内容一样，这一帧看不出来。往回拖到头也同理补一圈，
+       所以拖拽也是无缝的（拖动中要把基准点 drag.left 一起挪，不然手一动就弹回去）。 */
+    const wrapScroll = () => {
+      if (!wrapAt) return;
+      if (wall.scrollLeft >= wrapAt) { wall.scrollLeft -= wrapAt; if (drag) drag.left -= wrapAt; }
+      else if (drag && wall.scrollLeft <= 0) { wall.scrollLeft += wrapAt; drag.left += wrapAt; }
+    };
     wall.addEventListener('mousedown', e => {
       if (e.button !== 0) return;
       drag = { x: e.clientX, left: wall.scrollLeft, moved: false };
@@ -2855,33 +3354,27 @@ class ObosHomeView extends ItemView {
       if (!drag) return;
       const dx = e.clientX - drag.x;
       if (!drag.moved && Math.abs(dx) > 4) { drag.moved = true; wall.addClass('dragging'); }
-      if (drag.moved) { wall.scrollLeft = drag.left - dx; e.preventDefault(); }
+      if (drag.moved) { wall.scrollLeft = drag.left - dx; wrapScroll(); e.preventDefault(); }
     });
     const endDrag = () => {
       drag = null;
-      pauseUntil = performance.now() + 3000; /* 手动拨过后歇 3 秒再自动走 */
       window.setTimeout(() => wall.removeClass('dragging'), 0);
     };
     wall.addEventListener('mouseup', endDrag);
     wall.addEventListener('mouseleave', () => { hover = false; endDrag(); });
     wall.addEventListener('mouseenter', () => { hover = true; });
 
-    /* v6.9c：剧满一页自动慢速轮播——悬停/拖拽即停，到尾歇一拍平滑回头循环 */
+    /* v6.9c 自动慢速轮播，悬停/拖拽即停。
+       v8.5b 改成首尾相接的无缝循环：不再「滚到尾停一拍再平滑倒回开头」（用户点名毙掉），
+       现在是最后一张后面直接接着第一张，永远单向流。接龙由下面 paintPoster 补的副本实现。 */
     if (this._wallAutoRaf) window.cancelAnimationFrame(this._wallAutoRaf);
     const autoTick = () => {
       if (!wall.isConnected) { this._wallAutoRaf = null; return; }
       this._wallAutoRaf = window.requestAnimationFrame(autoTick);
       if (hover || drag || document.hidden) return;
-      const max = wall.scrollWidth - wall.clientWidth;
-      if (max <= 4) return; /* 没满一页不动 */
-      const now = performance.now();
-      if (now < pauseUntil) return;
-      if (wall.scrollLeft >= max - 1) {
-        pauseUntil = now + 2200;
-        wall.scrollTo({ left: 0, behavior: 'smooth' });
-        return;
-      }
+      if (wall.scrollWidth - wall.clientWidth <= 4) return; /* 没满一页不动 */
       wall.scrollLeft += 0.4;
+      wrapScroll();
     };
     this._wallAutoRaf = window.requestAnimationFrame(autoTick);
 
@@ -2905,14 +3398,19 @@ class ObosHomeView extends ItemView {
       eBtn.onclick = e => { e.stopPropagation(); this.showDramaSearch(); };
     }
 
-    shown.forEach((d, i) => {
+    /* v8.5b 拆成单卡函数：首尾相接的无缝轮播要把整排海报再画一份当「接龙尾巴」 */
+    const paintPoster = (d, i, clone) => {
       const fm = d.fm;
       const total = Number(fm.episodes) || 0;
       const cur = Number(fm.current_episode) || 0;
       const pct = total > 0 ? Math.min(100, Math.round((cur / total) * 100)) : 0;
       const url = this.posterUrl(fm);
 
-      const item = wall.createDiv({ cls: 'obos-poster obos-in', attr: { style: `--i:${i}` } });
+      /* 副本不再放入场动画（obos-in 是按 --i 延迟的逐张飞入，副本跟着放会在墙尾闪一排） */
+      const item = wall.createDiv({
+        cls: `obos-poster${clone ? ' obos-poster-clone' : ' obos-in'}`,
+        attr: clone ? { 'aria-hidden': 'true' } : { style: `--i:${i}` },
+      });
       /* 浮雕手感：跟随鼠标的 3D 倾斜（替代单纯放大，用户拍板） */
       item.addEventListener('mousemove', e => {
         const r = item.getBoundingClientRect();
@@ -2972,7 +3470,125 @@ class ObosHomeView extends ItemView {
       };
       mini('douban', '豆', er.douban);
       mini('imdb', 'IMDb', er.imdb);
-    });
+    };
+    shown.forEach((d, i) => paintPoster(d, i, false));
+
+    /* v8.5b 首尾相接：满一页才接龙——整排海报再画一份贴在后面，滚过第一份的长度就把
+       scrollLeft 原地减掉这个长度。两份内容一模一样，跳的那一帧看不出来，于是永远向左流，
+       不再「滚到头再平滑倒回开头」（用户点名毙掉的老行为）。 */
+    if (shown.length) {
+      window.requestAnimationFrame(() => {
+        if (!wall.isConnected || wall.scrollWidth <= wall.clientWidth + 4) return;
+        const first = wall.firstElementChild;
+        shown.forEach((d, i) => paintPoster(d, i, true));
+        const clone = wall.querySelector('.obos-poster-clone');
+        if (first && clone) wrapAt = clone.offsetLeft - first.offsetLeft;
+      });
+    }
+  }
+
+  /* ===== 「补全」钮：全库剧集缺什么补什么（封面 / 简介 / 豆瓣 · IMDb 评分） =====
+     第一层跑确定性级联（零 AI，见 dataMixin 顶部的抓取标准），剩下的洞第二层交 AI 收尾。
+     只补空缺，已有的字段与正文一字不动；查不到就留空，绝不编造。 */
+  async bulkFillDramas(btn) {
+    if (this.bulkFilling) return;
+    const all = this.collect(FOLDERS.dramas, 'drama');
+    /* 先算清单：一次网络请求都不为「本来就齐全」的剧浪费 */
+    const jobs = [];
+    for (const d of all) {
+      const body = await this.app.vault.cachedRead(d.file);
+      const er = d.fm.external_rating || {};
+      const num = v => (typeof v === 'number' ? v : Number(v)) > 0;
+      const need = {
+        poster: !this.posterUrl(d.fm),
+        intro: !/^##\s*简介\s*$/m.test(stripFrontmatter(body)),
+        douban: !num(er.douban),
+        imdb: !num(er.imdb),
+      };
+      if (need.poster || need.intro || need.douban || need.imdb) jobs.push({ d, need });
+    }
+    if (!jobs.length) { new Notice('全部剧集的封面、简介、评分都是齐的 🍬'); return; }
+
+    this.bulkFilling = true;
+    const label = btn.textContent;
+    btn.disabled = true;
+    const done = { poster: 0, intro: 0, rating: 0 };
+    const leftover = [];   /* 第一层填不上的洞，攒起来交第二层 */
+    new Notice(`补全开始：${jobs.length} 部待补（避开豆瓣限流，约 ${Math.ceil(jobs.length * 10 / 60)} 分钟，请勿关页）`, 8000);
+    try {
+      for (let i = 0; i < jobs.length; i++) {
+        const { d, need } = jobs[i];
+        const name = d.fm.title || d.file.basename;
+        btn.textContent = `补全中 ${i + 1}/${jobs.length} · ${name}`;
+        const hole = { path: d.file.path, name, orig: '', poster: false, intro: false, douban: false, imdb: false, plotEN: '', conflict: null };
+        try {
+          const facts = await this.fetchDramaFacts(d.fm);
+          const got = await this.fillRatings(d.file, d.fm, facts);
+          if ((need.douban && got.douban) || (need.imdb && got.imdb)) done.rating++;
+          if (need.poster && facts.poster) {
+            try { await this.savePoster(d.file, d.fm, facts.poster); done.poster++; } catch (e) { console.error('封面下载失败', name, e); }
+          }
+          if (need.intro && facts.intro) {
+            /* read+modify 而非 vault.process：manifest 的 minAppVersion 还是 1.5.0，process 要 1.6+ */
+            const txt = await this.app.vault.read(d.file);
+            await this.app.vault.modify(d.file, insertIntro(txt, facts.intro));
+            done.intro++;
+          }
+          hole.orig = String(d.fm.title_original || '').trim() || facts.origName || '';
+          hole.poster = need.poster && !facts.poster;
+          hole.intro = need.intro && !facts.intro;
+          hole.plotEN = hole.intro ? (facts.introEN || '') : '';
+          hole.douban = need.douban && !got.douban;
+          hole.imdb = need.imdb && !got.imdb;
+          hole.conflict = facts.conflict || null;
+        } catch (e) {
+          console.error('补全失败', name, e);
+          Object.assign(hole, { poster: need.poster, intro: need.intro, douban: need.douban, imdb: need.imdb });
+        }
+        if (hole.poster || hole.intro || hole.douban || hole.imdb) leftover.push(hole);
+        await sleep(DOUBAN_GAP);
+      }
+    } finally {
+      this.bulkFilling = false;
+      btn.disabled = false;
+      btn.textContent = label;
+    }
+    new Notice(`第一层完成：封面 +${done.poster} · 简介 +${done.intro} · 评分 +${done.rating}`
+      + (leftover.length ? `；还剩 ${leftover.length} 部有缺口，交给 AI 收尾` : '；一个洞都没剩 🍬'), 12000);
+    this.render();
+    if (leftover.length) this.aiPatchDramas(leftover);
+  }
+
+  /* 【第二层】AI 收尾：第一层填不上的洞攒成一张清单，一个后台任务全包了。
+     只有两件事是 AI 干得比接口好的——把英文梗概翻成中文、以及联网找结构化接口里根本没有的条目。
+     其余一律不许它自由发挥：不许改已有字段、不许编分数、查不到就留空。 */
+  aiPatchDramas(holes) {
+    const lines = holes.slice(0, 24).map(h => {
+      const want = [];
+      if (h.poster) want.push('封面');
+      if (h.intro) want.push(h.plotEN ? '简介（下面给了英文原文，翻译即可，不必再搜）' : '简介');
+      if (h.douban) want.push('豆瓣评分');
+      if (h.imdb) want.push('IMDb 评分');
+      return `- 《${h.name}》${h.orig ? `（原名 ${h.orig}）` : ''} 文件 "${h.path}"：缺 ${want.join('、')}`
+        + (h.conflict ? `　⚠ 有同名不同作品：豆瓣认 ${h.conflict.douban} 年、IMDb 认 ${h.conflict.imdb} 年，先判定这条笔记指的是哪一部再补` : '')
+        + (h.plotEN ? `\n  英文梗概原文：${h.plotEN.replace(/\s+/g, ' ').slice(0, 600)}` : '');
+    }).join('\n');
+
+    this.plugin.runClaude('AI 补全收尾',
+      `下面这些剧集笔记，程序已经用豆瓣/IMDb/TVmaze/iTunes 的接口跑过一轮，剩下的洞接口填不上，交给你。\n\n${lines}\n\n`
+      + `【怎么补】\n`
+      + `1. 简介：给了英文梗概原文的，直接翻成中文——两三句、剧情梗概、不剧透关键反转、不要「本剧讲述了」这种腔调；`
+      + `没给原文的，联网查中文剧情简介。写进正文「## 简介」，排在「## 看点」之前，正文其余内容一字不动。\n`
+      + `2. 封面：联网找该剧海报图直链（.jpg/.png，尽量竖版高清），下载存到 "30-Media/Posters/<剧名>.jpg"，`
+      + `再把 frontmatter 的 poster 改成 "[[30-Media/Posters/<剧名>.jpg]]"。下载不下来就别写这个字段。\n`
+      + `3. 评分：联网查真实分数，只填 frontmatter 里 external_rating 的 douban / imdb 子字段（纯数字）。\n\n`
+      + `【铁律，违反了这次任务就算失败】\n`
+      + `- 只补上面点名缺的字段，其余 frontmatter 与正文一字不动。\n`
+      + `- 查不到就留空。**绝不编造分数、绝不写「约 8.0」「大概 7 分」这种数字、绝不用别的季或同名作品的分数顶替。**\n`
+      + `- 不确定是不是同一部剧（年份对不上、季数对不上）就当查不到，宁可留空。\n`
+      + `- 标了「⚠ 有同名不同作品」的，先看笔记正文与 platform / added 判断指的是哪一部，判不出就整条留空别猜。\n\n`
+      + `最后输出一行：AI 收尾完成，补上 X 部的 Y 项，Z 项确实查不到。`,
+      ok => { if (ok) this.render(); });
   }
 
   /* ===== v6.9 搜剧添加：TVmaze 搜索 → 选中自动建档（集数/海报/评分一并抓，AI 后台补中文名与豆瓣/IMDb） ===== */

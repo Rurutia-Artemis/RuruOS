@@ -119,8 +119,71 @@ notes: "一句话推荐语（从来源文章提炼）"
 added: 2026-07-10
 ```
 
-**观影管线（Mia 必读）**：用户发来观影推荐文章/剧名时，提取剧目信息写入本文件夹，`status` 一律写 `待定`——用户会在中枢 App 的「待归类」区自己点进详情页决定追不追。正文放推荐理由、来源文章链接、外部评分。有海报就下载到 `30-Media/Posters/`（文件名与剧名一致）；没有就留空，App 会自动联网搜封面。
+**观影管线（Mia 必读）**：用户发来观影推荐文章/剧名时，提取剧目信息写入本文件夹，`status` 一律写 `待定`——用户会在中枢 App 的「待归类」区自己点进详情页决定追不追。正文放推荐理由、来源文章链接、外部评分。封面与简介不用你手动找，照下面的抓取标准走。
 **分季**：多季剧按季建档（跟随豆瓣分季条目）——标题带季号（如《龙之家族 第三季》），`episodes` 填该季集数，海报用该季的；推荐没指明季数的默认最新一季。
+
+#### 剧集资料抓取标准（写完剧集笔记必须做，不许跳）
+
+补的是四样：**封面 / 简介 / 豆瓣评分 / IMDb 评分**。分两层，先跑第一层，第一层填不上的才轮到你自己动手。
+
+##### 第一层：先跑脚本，别自己想办法查
+
+建档 / 改档之后，对每个新写的剧集笔记跑一遍：
+
+```bash
+python3 90-System/Scripts/drama-facts.py 30-Media/Dramas/<剧名>.md
+# 一次补全库缺的：python3 90-System/Scripts/drama-facts.py --all
+```
+
+脚本走的全是结构化接口，只补空缺，已有字段和正文一字不动，**永不编造**。跑完把输出行贴进回执。**没跑脚本 = 这条剧集入库不算完成。**
+
+它内部的级联顺序（你手动补时按同一套走，别另发明）：
+
+| 要补的 | 顺位 1 | 顺位 2 | 顺位 3 | 顺位 4 |
+|---|---|---|---|---|
+| 封面 | 豆瓣 `subject_suggest` 的 `img`，`/s_ratio_poster/`→`/l_ratio_poster/` | IMDb `primaryImage`（千像素级原图） | TVmaze `image.original` | iTunes `artworkUrl100`→`800x800bb` |
+| 简介 | 豆瓣 rexxar 的 `intro`（中文，直接用） | IMDb `plot.plotText`（英文→翻译） | TVmaze `summary`（英文→翻译） | 联网搜 |
+| 豆瓣评分 | 豆瓣 `j/subject_abstract` 的 `rate` | — | — | — |
+| IMDb 评分 | IMDb `ratingsSummary.aggregateRating` | — | — | — |
+
+接口地址：
+- 豆瓣条目：`https://movie.douban.com/j/subject_suggest?q=<剧名>` → 拿 `id`、`sub_title`（英文原名）、`img`、`year`
+- 豆瓣分与集数：`https://movie.douban.com/j/subject_abstract?subject_id=<id>` → `rate`、`episodes_count`
+- 豆瓣简介：`https://m.douban.com/rexxar/api/v2/tv/<id>`（电影条目换 `/movie/`）→ `intro`
+- IMDb 条目：`https://v3.sg.media-imdb.com/suggestion/x/<小写查询词>.json` → `d[].id`（tt 号）、`l`（英文名）、`y`、`qid`（类型）
+- IMDb 详情：POST `https://api.graphql.imdb.com/`，body `{"query":"query{title(id:\"tt…\"){originalTitleText{text} releaseYear{year} ratingsSummary{aggregateRating} primaryImage{url} plot{plotText{plainText}}}}"}`
+- TVmaze：`https://api.tvmaze.com/search/shows?q=<原名>`　　iTunes：`https://itunes.apple.com/search?term=<原名>&entity=tvSeason`
+
+请求要点（踩过的坑，别重踩）：
+- 豆瓣接口带桌面 UA；rexxar 还要带 `Referer: https://m.douban.com/movie/subject/<id>/`。
+- **下载豆瓣海报必须带 `Referer: https://movie.douban.com/`**——`img*.doubanio.com` 有防盗链，不带一律回 418（带 UA 没用）。接口只要 UA、图床只要 Referer，是两套限制。
+- 豆瓣连打十几条就开始静默返空数组，**每次请求之间隔 2.5 秒**；所有查询词都返空时先当限流处理，歇久一点重试一轮再判定「查不到」。
+- **TVmaze 只有剧集，没有电影**——《怒火救援》《K-POP：猎魔女团》这类查不到分就是因为这个。IMDb 那条路电影剧集通吃，优先走它。
+- **先从豆瓣把英文原名学回来**（条目的 `sub_title`，按 `/` 拆取第一个有拉丁字母且无汉字的段），写进 `title_original`，再拿它去搜 IMDb / TVmaze / iTunes——这三个都是英文库，拿中文剧名去问命中率差一大截。原名只写 `title_original`，**不要往 `title` 里加括号**：title 是文件名与全库显示名。
+
+##### 命中判定（对不上就当没查到，宁可留空也不许张冠李戴）
+
+- **豆瓣**：季号一致（我们的标题不带季号时，豆瓣的「第一季」也算）＋ 年份差 ≤1 ＋ 中文名去季号或原名与查询词相等。三条缺一不可。
+- **IMDb**：**别拿年份当主要判据**——IMDb 的年份是「剧集首播年」，我们库里的是「该季年份」。用英文名查时只认「去掉季号后名字完全相等」的条目（《怪奇物语 第五季》要配到 `Stranger Things` 主条目，不是 2025 年那个同名花絮）；用中文名查时才用年份卡一道。
+- **两侧交叉验证**：标题不带季号、而豆瓣与 IMDb 认的年份差 >2，多半是**同名不同作品**（《怒火救援》＝ Netflix 2026 剧，豆瓣首条却是 2004 年丹泽尔那部电影）。这时以笔记里的 `year` 为准取其中一边；`year` 是空的就**两边分数都别写**，标出来等人判。
+
+##### 第二层：第一层填不上的，你上（这才是你联网搜索的用武之地）
+
+脚本跑完会打印一张「交接单」，列出每部剧还缺什么、以及能拿到的英文原文。照单干：
+
+1. **简介**：交接单给了英文原文的，**直接翻成中文**，不必再搜——两三句、剧情梗概、不剧透关键反转、不要「本剧讲述了」这种腔调。没给原文的才去联网查中文简介。写进正文 `## 简介`，排在 `## 看点` 之前。
+2. **封面**：联网找该剧海报直链（尽量竖版高清），下载存 `30-Media/Posters/<剧名>.jpg`，再把 `poster` 改成 `"[[30-Media/Posters/<剧名>.jpg]]"`。下载不下来就别写这个字段。
+3. **评分**：联网查真实分数，只填 `external_rating` 的 `douban` / `imdb`（纯数字）。
+4. **`notes`**：为空时补一句话推荐语（不剧透）。
+
+##### 三条铁律（违反了这条剧集就算没做完）
+
+1. **只补点名缺的字段**，其余 frontmatter 与正文一字不动。
+2. **查不到就留空。** 绝不编造分数，不许写「约 8.0」「大概 7 分」，不许拿别的季或同名作品的分数顶替。
+3. **不确定是不是同一部剧**（年份对不上、季数对不上、类型对不上）**就当查不到。**
+
+中枢 App 的「补全」钮走的是同一套两层规则（插件 `main.js` 的 `dataMixin.fetchDramaFacts` + `aiPatchDramas`）。**规则改一边，另一边必须跟着改**：脚本 = `90-System/Scripts/drama-facts.py`，插件 = `dataMixin`。
+
 
 ### 待办 `40-Life/Tasks/`
 

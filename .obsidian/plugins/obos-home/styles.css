@@ -14,6 +14,9 @@
   --mint: #6fd8b4;
   --sky: #7db8f7;
   --taro: #b9a5f5;
+  /* v8.7 危险色：删除类操作专用。比 berry 更红更沉，一眼能和「粉色可爱钮」区分开，
+     但仍是糖果调不刺眼。只给删除用，别拿它当装饰色。 */
+  --danger: #f2647a;
 }
 
 /* ===== 奶油白天 ===== */
@@ -602,7 +605,7 @@
 .obos-reader-scroll { position: relative; z-index: 1; flex: 1; overflow-y: auto; }
 
 /* 阅读器顶栏按钮：果冻钮语义色（复用 --jc，obos-jc-* 修饰类可通用覆盖） */
-.obos-icon-btn, .obos-discard-btn, .obos-read-toggle, .obos-star-toggle {
+.obos-icon-btn, .obos-discard-btn, .obos-danger-btn, .obos-read-toggle, .obos-star-toggle {
   border: none; cursor: pointer;
   font-family: var(--display); font-weight: 800; font-size: 0.96em;
   color: var(--sticker-ink);
@@ -612,9 +615,11 @@
   transition: transform 0.15s var(--spring), box-shadow 0.15s ease;
   display: inline-flex; align-items: center; gap: 5px;
 }
-.obos-icon-btn:hover, .obos-discard-btn:hover, .obos-read-toggle:hover, .obos-star-toggle:hover { transform: translateY(-2px); }
-.obos-icon-btn:active, .obos-discard-btn:active, .obos-read-toggle:active, .obos-star-toggle:active { transform: translateY(3px) scale(0.97); }
+.obos-icon-btn:hover, .obos-discard-btn:hover, .obos-danger-btn:hover, .obos-read-toggle:hover, .obos-star-toggle:hover { transform: translateY(-2px); }
+.obos-icon-btn:active, .obos-discard-btn:active, .obos-danger-btn:active, .obos-read-toggle:active, .obos-star-toggle:active { transform: translateY(3px) scale(0.97); }
 .obos-discard-btn { --jc: var(--berry); }
+/* v8.7 删除钮：红色系，字也压深一档，别跟旁边的粉钮糊成一片 */
+.obos-danger-btn { --jc: var(--danger); color: #61121f; }
 .obos-read-toggle { --jc: var(--mint); }
 .obos-read-toggle.is-read { opacity: 0.85; }
 .obos-star-toggle { --jc: var(--butter); }
@@ -949,13 +954,23 @@
 .obos-chooser-cell:hover img { border-color: var(--berry); }
 .obos-chooser-label { font-size: 0.74em; color: var(--muted); margin-top: 7px; line-height: 1.4; }
 
+/* ===== v8.7 删除确认弹层（复用 .obos-chooser 的遮罩，盒子收窄成对话框） ===== */
+.obos-chooser.obos-confirm .obos-chooser-box { width: min(430px, 92%); text-align: center; padding: 26px 24px 22px; }
+.obos-confirm-art { font-size: 2.4em; line-height: 1; margin-bottom: 10px; }
+.obos-confirm-title { font-family: var(--display); font-weight: 800; font-size: 1.16em; margin-bottom: 8px; }
+.obos-confirm-sub { font-size: 0.88em; color: var(--muted); line-height: 1.65; margin-bottom: 18px; }
+.obos-confirm-sub b { color: var(--ink); font-weight: 800; }
+.obos-confirm-btns { display: flex; gap: 12px; justify-content: center; }
+
 /* ===== 文字色护甲：压制应用主题对按钮文字的干扰 ===== */
-.obos-jelly, .obos-icon-btn, .obos-discard-btn, .obos-read-toggle, .obos-star-toggle,
+.obos-jelly, .obos-icon-btn, .obos-discard-btn, .obos-danger-btn, .obos-read-toggle, .obos-star-toggle,
 .obos-mini-btn.save, .obos-kind-opt.on, .obos-read-btn, .obos-plus,
 .obos-tab.on, .obos-chip.on, .obos-art-cat, .obos-kind, .obos-d-chip,
 .obos-poster-triage, .obos-ledger-badge, .obos-mdprev-badge,
 .obos-dp-day.on, .obos-ledger-table th, .obos-head-add,
 .obos-theme-pill button.on { color: var(--sticker-ink) !important; }
+/* 删除钮要压深的酒红字，得排在护甲之后，否则被上面那条 sticker-ink 抹掉 */
+.obos-danger-btn { color: #61121f !important; }
 .obos-mini-btn { color: var(--muted) !important; }
 .obos-mini-btn:hover { color: var(--ink) !important; }
 .obos-kind-opt { color: var(--muted) !important; }
@@ -1411,9 +1426,22 @@
   background: color-mix(in srgb, var(--pc, var(--peach)) 16%, var(--frost));
 }
 .obos-tab:hover { background: color-mix(in srgb, var(--pc, var(--peach)) 28%, var(--frost)); }
+/* 【v8.7 修：选中的 tab 一悬停就变成看不清的黑疙瘩】
+   上面这条 :hover 和 .obos-tab.on 同权重（都是 0,2,0）但排在后面，于是用 background 简写
+   把选中态的渐变实底整个擦掉；末部底色护甲又给 .on 强制了 background-color: transparent
+   （因为"实底本该来自渐变"）——两下一叠，悬停中的选中 tab 背景全透，透出底下的深色卡片，
+   而文字还是深棕的 --sticker-ink，就成了截图里那块黑疙瘩。
+   修法＝补一条 .on:hover（0,3,0 权重压过两者），把渐变还回去并略微提亮当悬停反馈。 */
+.obos-tab.on:hover {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pc, var(--peach)) 92%, #fff), color-mix(in srgb, var(--pc, var(--peach)) 88%, #fff));
+}
 .obos-chip, .obos-kind-opt { border-radius: 12px; }
 .obos-jelly { padding: 13px 26px; font-size: 1.03em; border-radius: 16px; }
 .obos-icon-btn, .obos-discard-btn, .obos-read-toggle, .obos-star-toggle { padding: 13px 26px; font-size: 1.02em; }
+/* v8.5 一键补全：标题长（用户点名要写全「一键搜索所有当前剧的封面和简介」），收成次级钮的份量，
+   不跟主钮「＋ 搜剧」抢眼；跑起来时文案会换成「补全中 3/21 · 剧名」，宽度按内容走不跳版 */
+.obos-bulkfill { padding: 10px 18px; font-size: 0.9em; letter-spacing: 0; }
+.obos-bulkfill:disabled { opacity: 0.75; cursor: progress; transform: none; }
 
 /* 顶栏方章钮：54px 圆角方章，一钮一色（--bc 传） */
 .obos-round {
@@ -1733,15 +1761,16 @@
   display: flex; flex-wrap: nowrap; align-items: flex-start;
   overflow-x: auto; overflow-y: hidden;
   gap: 24px; padding: 14px 6px 18px;
-  cursor: grab; scrollbar-width: thin;
+  cursor: grab;
+  /* 【v8.5 别再加回来】这里原本有 scrollbar-width: thin —— Chromium 121 起，
+     元素只要写了 scrollbar-width/scrollbar-color，本元素的 ::-webkit-scrollbar 规则全部作废，
+     追剧墙因此掉回系统灰原生横条（全库唯一一根不是糖霜的条，用户截图逮到）。糖霜样式见文件末部。 */
 }
 .obos-wall.dragging { cursor: grabbing; user-select: none; }
 .obos-wall.dragging .obos-poster { pointer-events: none; }
 .obos-wall > .obos-poster { flex: 0 0 232px; }
 .obos-wall::-webkit-scrollbar { height: 9px; }
-.obos-wall::-webkit-scrollbar-track { background: transparent; }
-.obos-wall::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--ink) 16%, transparent); border-radius: 999px; }
-.obos-wall::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--ink) 28%, transparent); }
+.obos-wall::-webkit-scrollbar-track, .obos-wall::-webkit-scrollbar-corner { background: transparent; }
 
 /* ===== v6.8：剧集置顶 ===== */
 .obos-poster-pin {
@@ -1849,7 +1878,9 @@
 .obos-stat-tile, .obos-stat-tile:hover { background-color: var(--frost) !important; }
 .obos-tab { background-color: color-mix(in srgb, var(--pc, var(--peach)) 16%, var(--frost)) !important; }
 .obos-tab:hover { background-color: color-mix(in srgb, var(--pc, var(--peach)) 28%, var(--frost)) !important; }
-.obos-tab.on { background-color: transparent !important; } /* 实底来自渐变，压住基态护甲即可 */
+/* 实底来自渐变，压住基态护甲即可；:hover 那份必须一起写，否则悬停时护甲的 hover 条
+   （上一行，同权重且更靠后）会把色层灌回来盖住渐变 */
+.obos-tab.on, .obos-tab.on:hover { background-color: transparent !important; }
 .obos-kind-opt { background-color: var(--frost) !important; }
 .obos-kind-opt.on { background-color: var(--butter) !important; }
 .obos-kind-opt.k-紧急.on { background-color: var(--berry) !important; }
@@ -1899,9 +1930,22 @@ body.obos-zen .workspace-split.mod-right-split { display: none !important; }
 .obos-scroll::-webkit-scrollbar-thumb:hover, .obos-reader-scroll::-webkit-scrollbar-thumb:hover {
   background-image: linear-gradient(180deg, var(--berry), var(--taro));
 }
-/* 追剧墙横条并入同族 */
-.obos-wall::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--berry) 42%, transparent); }
-.obos-wall::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--berry) 78%, transparent); }
+/* 追剧墙横条并入同族：v8.5 改成和竖条一样的糖果渐变细圆条（横向所以走 90deg），
+   透明边框 + padding-box 裁剪让糖条离边留白显瘦，轨道全透明。
+   v8.5b 跟组级把手同一套规矩——**平时隐身，鼠标进墙才现身**（拖动中也保持可见）。
+   隐身用「不画糖条」而不是 display:none，9px 的位子照占，出条收条不会顶得海报上下跳。
+   滚动条伪元素吃不了 transition，只能硬切，别费劲加过渡。 */
+.obos-wall::-webkit-scrollbar-thumb {
+  border-radius: 999px; min-width: 44px;
+  border: 2.5px solid transparent; background-clip: padding-box;
+  background-image: none;
+}
+.obos-wall:hover::-webkit-scrollbar-thumb, .obos-wall.dragging::-webkit-scrollbar-thumb {
+  background-image: linear-gradient(90deg, color-mix(in srgb, var(--berry) 52%, transparent), color-mix(in srgb, var(--taro) 52%, transparent));
+}
+.obos-wall:hover::-webkit-scrollbar-thumb:hover {
+  background-image: linear-gradient(90deg, var(--berry), var(--taro));
+}
 
 /* ===== v8.1d：天气列微调 + 换城市 ===== */
 /* 体感/湿度/降水三格下移（6px 用户嫌不够，v8.1e 加到 12px） */
